@@ -152,7 +152,7 @@ export function PlantillasList({ plantillas,onEdit, isLoading, onUpdate }: Plant
                 <TableCell className="font-medium">{plantilla.nombre}</TableCell>
                 <TableCell>
                   <Badge variant="outline">
-                    {plantilla.tipo_archivo === "WORD" ? "Word" : "Otro"}
+                    {plantilla.tipo_archivo === "WORD" || 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ? "Word" : "Otro"}
                   </Badge>
                 </TableCell>
                 <TableCell>{new Date(plantilla.creado_en).toLocaleDateString()}</TableCell>

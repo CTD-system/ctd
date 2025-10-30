@@ -1,49 +1,46 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-
-import { Plus, Search, Upload } from "lucide-react"
-import { Modulo, modulosService } from "@/src/lib/modulos"
-import { useToast } from "@/src/hooks/use-toast"
-import { Button } from "@/src/components/ui/button"
-import { Input } from "@/src/components/ui/input"
-import { ModulosList } from "@/src/components/modulos/modulos-list"
-import { CreateModuloDialog } from "@/src/components/modulos/create-modulo-dialog"
-import { ImportModuloDialog } from "@/src/components/modulos/import-modulo-dialog"
-
+import { useState, useEffect } from "react";
+import { Plus, Search, Upload } from "lucide-react";
+import { Modulo, modulosService } from "@/src/lib/modulos";
+import { useToast } from "@/src/hooks/use-toast";
+import { Button } from "@/src/components/ui/button";
+import { Input } from "@/src/components/ui/input";
+import { ModulosList } from "@/src/components/modulos/modulos-list";
+import { CreateModuloDialog } from "@/src/components/modulos/create-modulo-dialog";
+import { ImportModuloDialog } from "@/src/components/modulos/import-modulo-dialog";
 
 export default function ModulosPage() {
-  const [modulos, setModulos] = useState<Modulo[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
-  const { toast } = useToast()
+  const [modulos, setModulos] = useState<Modulo[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const { toast } = useToast();
 
   const loadModulos = async () => {
     try {
-      setIsLoading(true)
-      const data = await modulosService.getAll()
-      setModulos(data)
+      setIsLoading(true);
+      const data = await modulosService.getAll();
+      setModulos(data);
     } catch (error: any) {
       toast({
         title: "Error",
         description: error.response?.data?.message || "Error al cargar módulos",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    loadModulos()
-  }, [])
+    loadModulos();
+  }, []);
 
-  const filteredModulos = modulos.filter(
-    (mod) =>
-      mod.titulo.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  const filteredModulos = modulos.filter((mod) =>
+    mod.titulo.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
@@ -78,9 +75,18 @@ export default function ModulosPage() {
 
       <ModulosList modulos={filteredModulos} isLoading={isLoading} onUpdate={loadModulos} />
 
-      <CreateModuloDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} onSuccess={loadModulos} />
+      {/* Dialogs */}
+      <CreateModuloDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        onSuccess={loadModulos}
+      />
 
-      <ImportModuloDialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen} onSuccess={loadModulos} />
+      <ImportModuloDialog
+        open={isImportDialogOpen}
+        onOpenChange={setIsImportDialogOpen}
+        onSuccess={loadModulos}
+      />
     </div>
-  )
+  );
 }

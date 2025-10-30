@@ -115,7 +115,7 @@ export const plantillasService = {
   },
 
   async update(id: string, data: UpdatePlantillaData): Promise<Plantilla> {
-    const response = await apiClient.put(`/plantillas/${id}`, data)
+    const response = await apiClient.patch(`/plantillas/${id}`, data)
     return response.data
   },
 

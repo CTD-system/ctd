@@ -82,16 +82,7 @@ export function EditDocumentoDialog({ documento, open, onOpenChange, onSuccess }
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-tipo">Tipo</Label>
-              <Input
-                id="edit-tipo"
-                placeholder="Tipo de documento"
-                value={formData.tipo}
-                onChange={(e) => setFormData({ ...formData, tipo: e.target.value as Documento["tipo"] })}
-                required
-              />
-            </div>
+            
         
           </div>
           <DialogFooter>

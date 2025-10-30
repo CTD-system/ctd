@@ -27,6 +27,7 @@ export interface CreateDocumentoData {
   modulo_id: string
   nombre: string
   tipo: DocumentoTipo
+  anexos?: string[]
 }
 
 export interface UpdateDocumentoData {
@@ -61,8 +62,8 @@ export const documentosService = {
     return response.data
   },
 
-  async update(id: string, data: UpdateDocumentoData): Promise<Documento> {
-    const response = await apiClient.put(`/documentos/${id}`, data)
+  async update(id: string, data: Partial<UpdateDocumentoData>): Promise<Documento> {
+    const response = await apiClient.patch(`/documentos/${id}`, data)
     return response.data
   },
 
@@ -83,4 +84,27 @@ export const documentosService = {
     link.remove()
     window.URL.revokeObjectURL(url)
   },
+
+  async createFromPlantilla(
+  plantillaId: string,
+  data: {
+    modulo_id: string
+    nombre: string
+    tipo: DocumentoTipo
+    anexos:string[]
+  }
+): Promise<Documento> {
+  const response = await apiClient.post(`/documentos/word/from-plantilla/${plantillaId}`, data)
+  return response.data
+},
+
+async generarPlantillaDesdeDocumento(documentoId: string): Promise<{
+    message: string
+    plantillaId: string
+    nombre: string
+  }> {
+    const response = await apiClient.post(`/documentos/generar-plantilla/${documentoId}`)
+    return response.data
+  },
+
 }

@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/src/components/ui/button"
 import { Badge } from "@/src/components/ui/badge"
-import { Edit, Trash2, Eye, Download } from "lucide-react"
+import { Edit, Trash2, Eye, Download, Loader2, FilePlus2 } from "lucide-react"
 import { type Modulo, ModuloEstado, modulosService } from "@/src/lib/modulos"
+import { documentosService, type Documento } from "@/src/lib/documentos"
 import { useToast } from "@/src/hooks/use-toast"
 import { EditModuloDialog } from "./edit-modulo-dialog"
 import { ViewModuloDialog } from "./view-modulo-dialog"
@@ -19,7 +20,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/src/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/src/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/src/components/ui/table"
+import { Checkbox } from "@/src/components/ui/checkbox"
+import { AsignarDocumentosDialog } from "./asignar-documentos-dialog"
 
 interface ModulosListProps {
   modulos: Modulo[]
@@ -31,17 +41,24 @@ export function ModulosList({ modulos, isLoading, onUpdate }: ModulosListProps) 
   const [editingModulo, setEditingModulo] = useState<Modulo | null>(null)
   const [viewingModulo, setViewingModulo] = useState<Modulo | null>(null)
   const [deletingModulo, setDeletingModulo] = useState<Modulo | null>(null)
+  const [selectedModulo, setSelectedModulo] = useState<Modulo | null>(null)
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false)
+  const [loadingDetalle, setLoadingDetalle] = useState(false)
+  const [loadingAssign, setLoadingAssign] = useState(false)
+  const [documentos, setDocumentos] = useState<Documento[]>([])
+  const [selectedDocs, setSelectedDocs] = useState<string[]>([])
   const { toast } = useToast()
+  const [assignModulo, setAssignModulo] = useState<Modulo | null>(null)
 
+  // 🔹 Cargar documentos cuando se abre el diálogo
+ 
+
+  // 🗑️ Eliminar módulo
   const handleDelete = async () => {
     if (!deletingModulo) return
-
     try {
       await modulosService.delete(deletingModulo.id)
-      toast({
-        title: "Módulo eliminado",
-        description: "El módulo ha sido eliminado correctamente",
-      })
+      toast({ title: "Módulo eliminado", description: "El módulo ha sido eliminado correctamente" })
       onUpdate()
     } catch (error: any) {
       toast({
@@ -54,13 +71,13 @@ export function ModulosList({ modulos, isLoading, onUpdate }: ModulosListProps) 
     }
   }
 
+  // 📦 Descargar módulo completo
   const handleExport = async (modulo: Modulo) => {
     try {
-      const filename = `modulo_${modulo.numero}.zip`
-      await minioService.downloadModulo(filename)
+      await minioService.downloadModuloCompleto(modulo.id, modulo.titulo)
       toast({
         title: "Descarga iniciada",
-        description: "El módulo se está descargando como ZIP",
+        description: `El módulo "${modulo.titulo}" se está descargando como ZIP`,
       })
     } catch (error: any) {
       toast({
@@ -71,21 +88,40 @@ export function ModulosList({ modulos, isLoading, onUpdate }: ModulosListProps) 
     }
   }
 
-  if (isLoading) {
+  // 👁️ Ver detalles
+  const handleView = async (moduloId: string) => {
+    try {
+      setLoadingDetalle(true)
+      const moduloCompleto = await modulosService.getById(moduloId)
+      setViewingModulo(moduloCompleto)
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "No se pudo cargar el módulo",
+        variant: "destructive",
+      })
+    } finally {
+      setLoadingDetalle(false)
+    }
+  }
+
+  // 📎 Asignar documentos seleccionados al módulo
+  
+
+  // 🌀 Cargando lista
+  if (isLoading)
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     )
-  }
 
-  if (modulos.length === 0) {
+  if (modulos.length === 0)
     return (
       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
         <p>No se encontraron módulos</p>
       </div>
     )
-  }
 
   return (
     <>
@@ -93,9 +129,8 @@ export function ModulosList({ modulos, isLoading, onUpdate }: ModulosListProps) 
         <Table>
           <TableHeader className="bg-primary">
             <TableRow>
-              <TableHead className="text-primary-foreground">Número</TableHead>
               <TableHead className="text-primary-foreground">Título</TableHead>
-              <TableHead className="text-primary-foreground">Descripción</TableHead>
+              <TableHead className="text-primary-foreground">Módulo Contenedor</TableHead>
               <TableHead className="text-primary-foreground">Estado</TableHead>
               <TableHead className="text-primary-foreground">Fecha Creación</TableHead>
               <TableHead className="text-primary-foreground text-right">Acciones</TableHead>
@@ -104,9 +139,8 @@ export function ModulosList({ modulos, isLoading, onUpdate }: ModulosListProps) 
           <TableBody>
             {modulos.map((modulo) => (
               <TableRow key={modulo.id}>
-                <TableCell className="font-medium">{modulo.numero}</TableCell>
                 <TableCell>{modulo.titulo}</TableCell>
-                <TableCell className="max-w-xs truncate">{modulo.descripcion}</TableCell>
+                <TableCell>{modulo.moduloContenedor ? modulo.moduloContenedor.titulo : "—"}</TableCell>
                 <TableCell>
                   <Badge
                     variant={
@@ -123,15 +157,28 @@ export function ModulosList({ modulos, isLoading, onUpdate }: ModulosListProps) 
                 <TableCell>{new Date(modulo.creado_en).toLocaleDateString()}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => setViewingModulo(modulo)} title="Ver detalles">
-                      <Eye className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" onClick={() => handleView(modulo.id)} title="Ver detalles">
+                      {loadingDetalle ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
                     </Button>
+
                     <Button variant="ghost" size="icon" onClick={() => handleExport(modulo)} title="Exportar ZIP">
                       <Download className="h-4 w-4" />
                     </Button>
+
                     <Button variant="ghost" size="icon" onClick={() => setEditingModulo(modulo)} title="Editar">
                       <Edit className="h-4 w-4 text-primary" />
                     </Button>
+
+                    <Button
+  variant="ghost"
+  size="icon"
+  onClick={() => setAssignModulo(modulo)}
+  title="Asignar documentos"
+>
+  <FilePlus2 className="h-4 w-4 text-blue-600" />
+</Button>
+
+
                     <Button variant="ghost" size="icon" onClick={() => setDeletingModulo(modulo)} title="Eliminar">
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
@@ -143,6 +190,9 @@ export function ModulosList({ modulos, isLoading, onUpdate }: ModulosListProps) 
         </Table>
       </div>
 
+     
+
+
       {viewingModulo && (
         <ViewModuloDialog
           modulo={viewingModulo}
@@ -150,6 +200,16 @@ export function ModulosList({ modulos, isLoading, onUpdate }: ModulosListProps) 
           onOpenChange={(open) => !open && setViewingModulo(null)}
         />
       )}
+
+      {assignModulo && (
+  <AsignarDocumentosDialog
+    moduloId={assignModulo.id}
+    open={!!assignModulo}
+    onOpenChange={(open) => !open && setAssignModulo(null)}
+    onSuccess={onUpdate}
+  />
+)}
+
 
       {editingModulo && (
         <EditModuloDialog
@@ -165,7 +225,7 @@ export function ModulosList({ modulos, isLoading, onUpdate }: ModulosListProps) 
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. El módulo "{deletingModulo?.titulo}" será eliminado permanentemente.
+              El módulo "{deletingModulo?.titulo}" será eliminado permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

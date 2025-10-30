@@ -1,108 +1,240 @@
-"use client"
+"use client";
 
-import type React from "react"
-
-import { useState } from "react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/src/components/ui/dialog"
-import { Button } from "@/src/components/ui/button"
-import { Label } from "@/src/components/ui/label"
-import { Input } from "@/src/components/ui/input"
-import { Upload, FileArchive } from "lucide-react"
-import { useToast } from "@/src/hooks/use-toast"
-import { minioService } from "@/src/lib/minio"
+import type React from "react";
+import { useCallback, useState } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/src/components/ui/dialog";
+import { Button } from "@/src/components/ui/button";
+import { Label } from "@/src/components/ui/label";
+import { Upload, FileArchive, X, Loader2 } from "lucide-react";
+import { useToast } from "@/src/hooks/use-toast";
+import { minioService } from "@/src/lib/minio";
 
 interface ImportExpedienteDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSuccess: () => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
 }
 
 export function ImportExpedienteDialog({ open, onOpenChange, onSuccess }: ImportExpedienteDialogProps) {
-  const [file, setFile] = useState<File | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const { toast } = useToast()
+  const [files, setFiles] = useState<File[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isDragActive, setIsDragActive] = useState(false);
+  const { toast } = useToast();
+
+  const acceptZip = (f?: File | null) => !!f && f.name.toLowerCase().endsWith(".zip");
+
+  const addFiles = useCallback((newFiles: FileList | File[]) => {
+    const arr = Array.from(newFiles);
+    const valid = arr.filter((f) => {
+      if (!acceptZip(f)) {
+        toast({
+          title: "Archivo ignorado",
+          description: `${f.name} no es un ZIP y fue ignorado.`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      return true;
+    });
+
+    // Evitar duplicados por nombre
+    const existingNames = new Set(files.map((f) => f.name));
+    const filtered = valid.filter((f) => !existingNames.has(f.name));
+
+    if (filtered.length === 0 && valid.length > 0) {
+      toast({
+        title: "Duplicado",
+        description: "Algunos archivos ya estaban en la lista y fueron ignorados.",
+      });
+    }
+
+    setFiles((prev) => [...prev, ...filtered]);
+  }, [files, toast]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0]
-    if (selectedFile) {
-      if (!selectedFile.name.endsWith(".zip")) {
-        toast({
-          title: "Error",
-          description: "Solo se permiten archivos ZIP",
-          variant: "destructive",
-        })
-        return
-      }
-      setFile(selectedFile)
-    }
-  }
+    const selected = e.target.files;
+    if (!selected) return;
+    addFiles(selected);
+    // reset input so same file can be selected again if removed
+    e.currentTarget.value = "";
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+    const dt = e.dataTransfer;
+    if (!dt || !dt.files || dt.files.length === 0) return;
+    addFiles(dt.files);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    setIsDragActive(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragActive(false);
+  };
+
+  const removeFile = (name: string) => {
+    setFiles((prev) => prev.filter((f) => f.name !== name));
+  };
+
+  const clearAll = () => setFiles([]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!file) return
+    e.preventDefault();
+    if (files.length === 0) return;
 
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      await minioService.uploadExpediente(file)
-      toast({
-        title: "Expediente importado",
-        description: "El expediente ha sido importado correctamente",
-      })
-      onSuccess()
-      onOpenChange(false)
-      setFile(null)
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Error al importar expediente",
-        variant: "destructive",
-      })
+      for (const file of files) {
+        try {
+          await minioService.importarCTD(file);
+          toast({
+            title: "Importado",
+            description: `${file.name} importado correctamente.`,
+          });
+        } catch (innerError: any) {
+          toast({
+            title: `Error al importar ${file.name}`,
+            description: innerError?.response?.data?.message || innerError?.message || "Error desconocido",
+            variant: "destructive",
+          });
+        }
+      }
+      onSuccess();
+      onOpenChange(false);
+      clearAll();
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-xl w-[min(92%,720px)]">
         <DialogHeader>
-          <DialogTitle>Importar Expediente</DialogTitle>
-          <DialogDescription>Sube un archivo ZIP con el expediente completo</DialogDescription>
+          <DialogTitle>Importar Expedientes</DialogTitle>
+          <DialogDescription>Arrastra uno o varios archivos ZIP con la estructura del expediente o haz clic para seleccionarlos.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="file">Archivo ZIP</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="file"
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <Label className="mb-2">Archivos ZIP</Label>
+
+            <div
+              role="button"
+              tabIndex={0}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const input = document.getElementById("import-zip-input") as HTMLInputElement | null;
+                  input?.click();
+                }
+              }}
+              className={`relative flex items-center justify-center flex-col gap-3 p-6 rounded-lg border-2 transition-colors outline-none
+                ${isDragActive ? "border-primary bg-primary/5" : "border-dashed border-gray-200 bg-white"}
+                hover:border-primary focus-visible:ring-2 focus-visible:ring-primary/30`}
+              aria-label="Zona de subida de ZIPs"
+            >
+              <input
+                id="import-zip-input"
                 type="file"
                 accept=".zip"
                 onChange={handleFileChange}
                 disabled={isLoading}
-                className="flex-1"
+                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                multiple
+                aria-hidden
               />
-              {file && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <FileArchive className="h-4 w-4" />
-                  <span className="truncate max-w-[200px]">{file.name}</span>
+
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-md bg-gradient-to-tr from-primary to-primary/70 text-white shadow-sm" aria-hidden>
+                  <Upload className="h-5 w-5" />
                 </div>
+                <div className="text-left">
+                  <p className="font-medium">Arrastra y suelta ZIPs aquí</p>
+                  <p className="text-sm text-muted-foreground">o haz clic para seleccionar varios archivos</p>
+                </div>
+              </div>
+
+              <div className="w-full flex justify-center">
+                <div className="text-xs text-muted-foreground">
+                  Tamaño máximo recomendado por archivo: 200MB. Evita nombres duplicados.
+                </div>
+              </div>
+            </div>
+
+            {/* Lista de archivos */}
+            <div className="mt-4 space-y-2">
+              {files.length > 0 ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-medium">{files.length} archivo(s) listo(s) para importar</div>
+                    <div className="flex items-center gap-2">
+                      <button type="button" onClick={clearAll} disabled={isLoading} className="text-sm text-muted-foreground hover:underline">
+                        Limpiar
+                      </button>
+                    </div>
+                  </div>
+
+                  <ul className="max-h-48 overflow-auto divide-y rounded border bg-white border-gray-100">
+                    {files.map((f) => (
+                      <li key={f.name} className="flex items-center justify-between gap-3 p-2">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-md bg-gray-50 border">
+                            <FileArchive className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-medium truncate max-w-[360px]">{f.name}</div>
+                            <div className="text-xs text-muted-foreground">{(f.size / 1024 / 1024).toFixed(2)} MB</div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => removeFile(f.name)}
+                            disabled={isLoading}
+                            className="inline-flex items-center gap-2 px-2 py-1 rounded-md text-sm text-red-600 hover:bg-red-50 border border-red-100"
+                            aria-label={`Eliminar ${f.name}`}
+                          >
+                            <X className="h-4 w-4" />
+                            Eliminar
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <div className="text-sm text-muted-foreground">No hay archivos seleccionados</div>
               )}
             </div>
           </div>
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={() => { onOpenChange(false); setFiles([]); }} disabled={isLoading}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={!file || isLoading}>
+
+            <Button type="submit" disabled={files.length === 0 || isLoading} className="inline-flex items-center">
               {isLoading ? (
                 <>
-                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-foreground" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Importando...
                 </>
               ) : (
                 <>
                   <Upload className="mr-2 h-4 w-4" />
-                  Importar
+                  Importar {files.length > 0 ? `(${files.length})` : ''}
                 </>
               )}
             </Button>
@@ -110,5 +242,5 @@ export function ImportExpedienteDialog({ open, onOpenChange, onSuccess }: Import
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

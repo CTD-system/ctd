@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/src/components/ui/button"
 import { Badge } from "@/src/components/ui/badge"
-import { Edit, Trash2, Eye, Download } from "lucide-react"
+import { Edit, Trash2, Eye, Download, PlusCircle } from "lucide-react"
 import { type Expediente, ExpedienteEstado, expedientesService } from "@/src/lib/expedientes"
 import { useToast } from "@/src/hooks/use-toast"
 import { EditExpedienteDialog } from "./edit-expediente-dialog"
@@ -20,6 +20,9 @@ import {
   AlertDialogTitle,
 } from "@/src/components/ui/alert-dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/src/components/ui/table"
+import { modulosService, Modulo } from "@/src/lib/modulos"
+import { Input } from "@/src/components/ui/input"
+import { AsignarModulosDialog } from "./asignar-modulos-dialog"
 
 interface ExpedientesListProps {
   expedientes: Expediente[]
@@ -31,7 +34,13 @@ export function ExpedientesList({ expedientes, isLoading, onUpdate }: Expediente
   const [editingExpediente, setEditingExpediente] = useState<Expediente | null>(null)
   const [viewingExpediente, setViewingExpediente] = useState<Expediente | null>(null)
   const [deletingExpediente, setDeletingExpediente] = useState<Expediente | null>(null)
+  const [assigningExpediente, setAssigningExpediente] = useState<Expediente | null>(null)
+  const [modulos, setModulos] = useState<Modulo[]>([])
+  const [isLoadingModulos, setIsLoadingModulos] = useState(false)
+  const [selectedModuloId, setSelectedModuloId] = useState<string | null>(null)
   const { toast } = useToast()
+
+  
 
   const handleDelete = async () => {
     if (!deletingExpediente) return
@@ -56,7 +65,15 @@ export function ExpedientesList({ expedientes, isLoading, onUpdate }: Expediente
 
   const handleExport = async (expediente: Expediente) => {
     try {
-      await minioService.downloadExpedienteCompleto(expediente.id)
+      if (expediente.nombre.includes(".zip")) {
+        await minioService.downloadExpediente(expediente.nombre)
+        toast({
+          title: "Descarga iniciada",
+          description: "El expediente ZIP se está descargando",
+        })
+      }
+
+      await minioService.downloadExpedienteCompleto(expediente.id,expediente.nombre)
       toast({
         title: "Descarga iniciada",
         description: "El expediente se está descargando como ZIP",
@@ -69,6 +86,13 @@ export function ExpedientesList({ expedientes, isLoading, onUpdate }: Expediente
       })
     }
   }
+
+  const handleOpenAssign = (exp: Expediente) => {
+    setSelectedModuloId(null)
+    setAssigningExpediente(exp)
+  }
+
+  
 
   if (isLoading) {
     return (
@@ -94,7 +118,6 @@ export function ExpedientesList({ expedientes, isLoading, onUpdate }: Expediente
             <TableRow>
               <TableHead className="text-primary-foreground">Código</TableHead>
               <TableHead className="text-primary-foreground">Nombre</TableHead>
-              <TableHead className="text-primary-foreground">Descripción</TableHead>
               <TableHead className="text-primary-foreground">Estado</TableHead>
               <TableHead className="text-primary-foreground">Fecha Creación</TableHead>
               <TableHead className="text-primary-foreground text-right">Acciones</TableHead>
@@ -105,15 +128,15 @@ export function ExpedientesList({ expedientes, isLoading, onUpdate }: Expediente
               <TableRow key={expediente.id}>
                 <TableCell className="font-medium">{expediente.codigo}</TableCell>
                 <TableCell>{expediente.nombre}</TableCell>
-                <TableCell className="max-w-xs truncate">{expediente.descripcion}</TableCell>
+
                 <TableCell>
                   <Badge
                     variant={
-                      expediente.estado ===  ExpedienteEstado.APROBADO
+                      expediente.estado === ExpedienteEstado.APROBADO
                         ? "default"
                         : expediente.estado === ExpedienteEstado.EN_REVISION
-                          ? "secondary"
-                          : "outline"
+                        ? "secondary"
+                        : "outline"
                     }
                   >
                     {expediente.estado}
@@ -130,12 +153,29 @@ export function ExpedientesList({ expedientes, isLoading, onUpdate }: Expediente
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleExport(expediente)} title="Exportar ZIP">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleExport(expediente)}
+                      title="Exportar ZIP"
+                    >
                       <Download className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => setEditingExpediente(expediente)} title="Editar">
                       <Edit className="h-4 w-4 text-primary" />
                     </Button>
+
+                    {/* Nuevo botón: Asignar módulo */}
+                    <Button
+  variant="ghost"
+  size="icon"
+  onClick={() => setAssigningExpediente(expediente)}
+  title="Asignar módulos"
+>
+  <PlusCircle className="h-4 w-4 text-blue-600" />
+</Button>
+
+
                     <Button
                       variant="ghost"
                       size="icon"
@@ -168,6 +208,17 @@ export function ExpedientesList({ expedientes, isLoading, onUpdate }: Expediente
           onSuccess={onUpdate}
         />
       )}
+
+      {/* Diálogo de asignar módulo (simple modal con select) */}
+      {assigningExpediente && (
+  <AsignarModulosDialog
+    expedienteId={assigningExpediente.id}
+    open={!!assigningExpediente}
+    onOpenChange={(open) => !open && setAssigningExpediente(null)}
+    onSuccess={onUpdate}
+  />
+)}
+
 
       <AlertDialog open={!!deletingExpediente} onOpenChange={(open) => !open && setDeletingExpediente(null)}>
         <AlertDialogContent>

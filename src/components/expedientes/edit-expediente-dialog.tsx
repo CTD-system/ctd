@@ -29,7 +29,7 @@ interface EditExpedienteDialogProps {
 export function EditExpedienteDialog({ expediente, open, onOpenChange, onSuccess }: EditExpedienteDialogProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
-    codigo: expediente.codigo,
+    
     nombre: expediente.nombre,
     descripcion: expediente.descripcion,
     estado: expediente.estado,
@@ -38,7 +38,7 @@ export function EditExpedienteDialog({ expediente, open, onOpenChange, onSuccess
 
   useEffect(() => {
     setFormData({
-      codigo: expediente.codigo,
+      
       nombre: expediente.nombre,
       descripcion: expediente.descripcion,
       estado: expediente.estado,
@@ -78,16 +78,6 @@ export function EditExpedienteDialog({ expediente, open, onOpenChange, onSuccess
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-codigo">Código</Label>
-              <Input
-                id="edit-codigo"
-                placeholder="Código del expediente"
-                value={formData.codigo}
-                onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="edit-nombre">Nombre</Label>
               <Input
                 id="edit-nombre"
@@ -114,10 +104,10 @@ export function EditExpedienteDialog({ expediente, open, onOpenChange, onSuccess
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="BORRADOR">Borrador</SelectItem>
-                  <SelectItem value="EN_REVISION">En Revisión</SelectItem>
-                  <SelectItem value="APROBADO">Aprobado</SelectItem>
-                  <SelectItem value="ENVIADO">Enviado</SelectItem>
+                  <SelectItem value="borrador">Borrador</SelectItem>
+                  <SelectItem value="en_revision">En Revisión</SelectItem>
+                  <SelectItem value="aprobado">Aprobado</SelectItem>
+                  <SelectItem value="enviado">Enviado</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -63,7 +63,7 @@ export function CreatePlantillaPage({ onSuccess }: CreatePlantillaPageProps) {
       toast({
         title: "Plantilla creada",
         description: "La plantilla ha sido creada correctamente",
-        variant:"success"
+        variant: "success",
       });
       onSuccess();
       setFormData({
@@ -218,42 +218,58 @@ export function CreatePlantillaPage({ onSuccess }: CreatePlantillaPageProps) {
         Crear Nueva Plantilla
       </h1>
       <form onSubmit={handleSubmit} className="space-y-6">
-       
-      {/* Paper: Datos Generales */}
-      <div className="bg-white shadow rounded p-6 mb-6">
-        <h2 className="text-xl font-bold mb-4">Datos Generales</h2>
-        <div className="space-y-4">
-          <div className="space-y-1">
-            <Label htmlFor="nombre">1. Nombre</Label>
-            <Input
-              id="nombre"
-              value={formData.nombre}
-              onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-              required
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="descripcion">2. Descripción</Label>
-            <Textarea
-              id="descripcion"
-              value={formData.descripcion}
-              onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-              rows={3}
-            />
+        {/* Paper: Datos Generales */}
+        <div className="bg-white shadow rounded p-6 mb-6">
+          <h2 className="text-xl font-bold mb-4">Datos Generales</h2>
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <Label htmlFor="nombre">1. Nombre</Label>
+              <Input
+                id="nombre"
+                value={formData.nombre}
+                onChange={(e) =>
+                  setFormData({ ...formData, nombre: e.target.value })
+                }
+                required
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="descripcion">2. Descripción</Label>
+              <Textarea
+                id="descripcion"
+                value={formData.descripcion}
+                onChange={(e) =>
+                  setFormData({ ...formData, descripcion: e.target.value })
+                }
+                rows={3}
+              />
+            </div>
           </div>
         </div>
-      </div>
 
         {/* Estructura */}
         <div className="bg-white shadow rounded p-6">
-        <h2 className="text-xl font-bold mb-4">Estructura de la Plantilla</h2>
-        <div className="flex gap-2 flex-wrap mb-4">
-          {["capitulo","subcapitulo","parrafo","tabla","imagen","placeholder"].map((tipo,i)=>(
-            <Button key={tipo} type="button" size="sm" variant="outline" onClick={()=>agregarBloque(tipo as Bloque["tipo"])}>
-              {i+1}. Agregar {tipo}
-            </Button>
-          ))}
-        </div>
+          <h2 className="text-xl font-bold mb-4">Estructura de la Plantilla</h2>
+          <div className="flex gap-2 flex-wrap mb-4">
+            {[
+              "capitulo",
+              "subcapitulo",
+              "parrafo",
+              "tabla",
+              "imagen",
+              "placeholder",
+            ].map((tipo, i) => (
+              <Button
+                key={tipo}
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => agregarBloque(tipo as Bloque["tipo"])}
+              >
+                {i + 1}. Agregar {tipo}
+              </Button>
+            ))}
+          </div>
 
           <div className="space-y-4">
             {formData.estructura.bloques.map((bloque, index) => (
@@ -328,103 +344,98 @@ export function CreatePlantillaPage({ onSuccess }: CreatePlantillaPageProps) {
                   />
                 )}
                 {bloque.tipo === "tabla" && (
-                  <div className="overflow-x-auto">
-                    <div className="flex gap-2 mb-2">
-                      <Button
-                      type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => agregarFilaTabla(index)}
-                      >
-                        Agregar Fila
-                      </Button>
-                      <Button
-                      type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => agregarColumnaTabla(bloque, index)}
-                      >
-                        Agregar Columna
-                      </Button>
-                    </div>
-                    <table className="table-auto border-collapse border border-gray-300 w-full text-sm">
-                      <thead>
-                        <tr>
-                          {bloque.encabezados.map(
-                            (enc: any, colIndex: number) => (
-                              <th
-                                key={colIndex}
-                                className="border p-1 border-gray-300 relative"
-                                colSpan={enc.colSpan}
-                                rowSpan={enc.rowSpan}
-                              >
-                                <Input
-                                  value={enc.text}
-                                  onChange={(e) => {
-                                    const nuevosEncabezados =
-                                      bloque.encabezados.map(
-                                        (h: any, i: number) =>
-                                          i === colIndex
-                                            ? { ...h, text: e.target.value }
-                                            : h
-                                      );
-                                    actualizarBloque(index, {
-                                      ...bloque,
-                                      encabezados: nuevosEncabezados,
-                                    });
-                                  }}
-                                />
-                                <button
+  <div className="overflow-x-auto">
+    <div className="flex gap-2 mb-2">
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        onClick={() => agregarFilaTabla(index)}
+        disabled={bloque.encabezados.length === 0} // no agregar fila si no hay columnas
+      >
+        Agregar Fila
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        onClick={() => agregarColumnaTabla(bloque, index)}
+      >
+        Agregar Columna
+      </Button>
+    </div>
+
+    {bloque.encabezados.length > 0 ? (
+      <table className="table-auto border-collapse border border-gray-300 w-full text-sm">
+        <thead>
+          <tr>
+            {bloque.encabezados.map((enc: any, colIndex: number) => (
+              <th
+                key={colIndex}
+                className="border p-1 border-gray-300 relative"
+              >
+                <Input
+                  value={enc.text}
+                  onChange={(e) => {
+                    const nuevosEncabezados = bloque.encabezados.map(
+                      (h: any, i: number) =>
+                        i === colIndex ? { ...h, text: e.target.value } : h
+                    );
+                    actualizarBloque(index, {
+                      ...bloque,
+                      encabezados: nuevosEncabezados,
+                    });
+                  }}
+                />
+                <button
                   type="button"
-                  onClick={() => eliminarColumnaTabla(bloque, colIndex, index)}
+                  onClick={() =>
+                    eliminarColumnaTabla(bloque, colIndex, index)
+                  }
                   className="absolute top-1 right-1 text-red-500 hover:text-red-700"
                   title="Eliminar columna"
                 >
                   ✖
                 </button>
-                              </th>
-                            )
-                          )}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {bloque.filas.map((fila, rowIndex) => (
-                          <tr key={rowIndex}>
-                            {fila.map((celda, colIndex) => (
-                              <td
-                                key={colIndex}
-                                className="border p-1 border-gray-300 relative"
-                              >
-                                <Input
-                                  value={celda}
-                                  onChange={(e) =>
-                                    actualizarCeldaTabla(
-                                      bloque,
-                                      rowIndex,
-                                      colIndex,
-                                      e.target.value,
-                                      index
-                                    )
-                                  }
-                                />
-                              </td>
-                            ))}
-                            <td className="border p-2 w-10 text-center">
-                            <button
-                type="button"
-                onClick={() => eliminarFilaTabla(bloque, rowIndex, index)}
-                className="text-red-500 hover:text-red-700"
-                title="Eliminar fila"
-              >
-                ✖
-              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {bloque.filas.map((fila, rowIndex) => (
+            <tr key={rowIndex}>
+              {fila.map((celda, colIndex) => (
+                <td key={colIndex} className="border p-1 border-gray-300 relative">
+                  <Input
+                    value={celda}
+                    onChange={(e) =>
+                      actualizarCeldaTabla(bloque, rowIndex, colIndex, e.target.value, index)
+                    }
+                  />
+                </td>
+              ))}
+              <td className="border p-2 w-10 text-center">
+                <button
+                  type="button"
+                  onClick={() => eliminarFilaTabla(bloque, rowIndex, index)}
+                  className="text-red-500 hover:text-red-700"
+                  title="Eliminar fila"
+                >
+                  ✖
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    ) : (
+      <p className="text-sm text-muted-foreground">
+        La tabla no tiene columnas. Agrega al menos una columna para mostrarla.
+      </p>
+    )}
+  </div>
+)}
+
               </div>
             ))}
           </div>

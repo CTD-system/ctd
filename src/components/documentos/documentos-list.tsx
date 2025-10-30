@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Badge } from "@/src/components/ui/badge";
-import { Edit, Trash2, Download, Eye } from "lucide-react";
+import { Edit, Trash2, Download, Eye, FilePlus2, ClipboardPlus } from "lucide-react";
 import {
   type Documento,
   documentosService,
@@ -11,7 +11,6 @@ import {
 } from "@/src/lib/documentos";
 import { useToast } from "@/src/hooks/use-toast";
 import { EditDocumentoDialog } from "./edit-documento-dialog";
-
 import { minioService } from "@/src/lib/minio";
 import {
   AlertDialog,
@@ -44,20 +43,13 @@ export function DocumentosList({
   isLoading,
   onUpdate,
 }: DocumentosListProps) {
-  const [editingDocumento, setEditingDocumento] = useState<Documento | null>(
-    null
-  );
-  const [viewingDocumento, setViewingDocumento] = useState<Documento | null>(
-    null
-  );
-  const [deletingDocumento, setDeletingDocumento] = useState<Documento | null>(
-    null
-  );
+  const [editingDocumento, setEditingDocumento] = useState<Documento | null>(null);
+  const [viewingDocumento, setViewingDocumento] = useState<Documento | null>(null);
+  const [deletingDocumento, setDeletingDocumento] = useState<Documento | null>(null);
   const { toast } = useToast();
 
   const handleDelete = async () => {
     if (!deletingDocumento) return;
-
     try {
       await documentosService.delete(deletingDocumento.id);
       toast({
@@ -68,8 +60,7 @@ export function DocumentosList({
     } catch (error: any) {
       toast({
         title: "Error",
-        description:
-          error.response?.data?.message || "Error al eliminar documento",
+        description: error.response?.data?.message || "Error al eliminar documento",
         variant: "destructive",
       });
     } finally {
@@ -79,7 +70,7 @@ export function DocumentosList({
 
   const handleDownload = async (documento: Documento) => {
     try {
-      await minioService.downloadDocumento(documento.nombre);
+      await minioService.downloadDocumento(documento.id,documento.nombre);
       toast({
         title: "Descarga iniciada",
         description: "El documento se está descargando",
@@ -87,12 +78,37 @@ export function DocumentosList({
     } catch (error: any) {
       toast({
         title: "Error",
-        description:
-          error.response?.data?.message || "Error al descargar documento",
+        description: error.response?.data?.message || "Error al descargar documento",
         variant: "destructive",
       });
     }
   };
+
+  // 🧩 Nueva acción: generar plantilla desde documento
+  const handleGenerarPlantilla = async (documento: Documento) => {
+  try {
+    // 1️⃣ Generar plantilla en backend
+    const res = await documentosService.generarPlantillaDesdeDocumento(documento.id);
+    toast({
+      title: "Plantilla generada",
+      description: res.message,
+    });
+
+    // 2️⃣ Actualizar el documento original a tipo PLANTILLA
+    await documentosService.update(documento.id, { tipo: DocumentoTipo.PLANTILLA });
+
+    // 3️⃣ Refrescar la lista
+    onUpdate();
+  } catch (error: any) {
+    console.error("❌ Error generando plantilla:", error);
+    toast({
+      title: "Error",
+      description: error.response?.data?.message || "Error al generar plantilla",
+      variant: "destructive",
+    });
+  }
+};
+
 
   if (isLoading) {
     return (
@@ -119,23 +135,15 @@ export function DocumentosList({
               <TableHead className="text-primary-foreground">Nombre</TableHead>
               <TableHead className="text-primary-foreground">Tipo</TableHead>
               <TableHead className="text-primary-foreground">Versión</TableHead>
-              <TableHead className="text-primary-foreground">
-                MIME Type
-              </TableHead>
-              <TableHead className="text-primary-foreground">
-                Fecha Subida
-              </TableHead>
-              <TableHead className="text-primary-foreground text-right">
-                Acciones
-              </TableHead>
+              <TableHead className="text-primary-foreground">MIME Type</TableHead>
+              <TableHead className="text-primary-foreground">Fecha Subida</TableHead>
+              <TableHead className="text-primary-foreground text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {documentos.map((documento) => (
               <TableRow key={documento.id}>
-                <TableCell className="font-medium max-w-xs truncate">
-                  {documento.nombre}
-                </TableCell>
+                <TableCell className="font-medium max-w-xs truncate">{documento.nombre}</TableCell>
                 <TableCell>
                   <Badge
                     variant={
@@ -151,11 +159,12 @@ export function DocumentosList({
                 </TableCell>
                 <TableCell>{documento.version}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">
-                  {documento.mime_type ==='application/vnd.openxmlformats-officedocument.wordprocessingml.document'? 'word':'otro'}
+                  {documento.mime_type ===
+                  "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    ? "word"
+                    : "otro"}
                 </TableCell>
-                <TableCell>
-                  {new Date(documento.subido_en).toLocaleDateString()}
-                </TableCell>
+                <TableCell>{new Date(documento.subido_en).toLocaleDateString()}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button
@@ -166,6 +175,7 @@ export function DocumentosList({
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
+
                     <Button
                       variant="ghost"
                       size="icon"
@@ -174,6 +184,19 @@ export function DocumentosList({
                     >
                       <Download className="h-4 w-4" />
                     </Button>
+
+                    {/* 🧩 Mostrar solo si el documento no es plantilla */}
+                    {documento.tipo !== DocumentoTipo.PLANTILLA && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleGenerarPlantilla(documento)}
+                        title="Generar plantilla desde este documento"
+                      >
+                        <ClipboardPlus className="h-4 w-4 text-blue-500" />
+                      </Button>
+                    )}
+
                     <Button
                       variant="ghost"
                       size="icon"
@@ -182,6 +205,7 @@ export function DocumentosList({
                     >
                       <Edit className="h-4 w-4 text-primary" />
                     </Button>
+
                     <Button
                       variant="ghost"
                       size="icon"
@@ -198,6 +222,7 @@ export function DocumentosList({
         </Table>
       </div>
 
+      {/* 🔍 Dialogs */}
       {viewingDocumento && (
         <ViewDocumentoDialog
           documento={viewingDocumento}
@@ -215,6 +240,7 @@ export function DocumentosList({
         />
       )}
 
+      {/* 🗑 Confirmación de eliminación */}
       <AlertDialog
         open={!!deletingDocumento}
         onOpenChange={(open) => !open && setDeletingDocumento(null)}
@@ -223,8 +249,8 @@ export function DocumentosList({
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. El documento "
-              {deletingDocumento?.nombre}" será eliminado permanentemente.
+              Esta acción no se puede deshacer. El documento "{deletingDocumento?.nombre}" será
+              eliminado permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

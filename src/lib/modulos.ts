@@ -1,4 +1,5 @@
 import apiClient from "./api-client"
+import { Documento } from "./documentos"
 import type { Expediente } from "./expedientes"
 
 export enum ModuloEstado {
@@ -12,7 +13,6 @@ export interface Modulo {
   expediente: Expediente
   moduloContenedor?: Modulo
   submodulos: Modulo[]
-  numero: number
   titulo: string
   descripcion: string
   estado: ModuloEstado
@@ -23,30 +23,24 @@ export interface Modulo {
   ruta: string
   referencias_word_nombre?: string
   referencias_word_ruta?: string
+  documentos?: Documento[]
 }
 
 export interface CreateModuloData {
   expediente_id: string
-  moduloContenedor_id?: string
-  numero: number
+  modulo_contenedor_id?: string
   titulo: string
   descripcion: string
   estado: ModuloEstado
   ruta: string
+  crearIndiceWord: boolean,
+    crearReferenciasWord: boolean,
 }
 
 export interface UpdateModuloData {
-  expediente_id?: string
-  moduloContenedor_id?: string
-  numero?: number
   titulo?: string
   descripcion?: string
   estado?: ModuloEstado
-  ruta?: string
-  indice_word_nombre?: string
-  indice_word_ruta?: string
-  referencias_word_nombre?: string
-  referencias_word_ruta?: string
 }
 
 export const modulosService = {
@@ -66,11 +60,22 @@ export const modulosService = {
   },
 
   async update(id: string, data: UpdateModuloData): Promise<Modulo> {
-    const response = await apiClient.put(`/modulos/${id}`, data)
+    const response = await apiClient.patch(`/modulos/${id}`, data)
     return response.data
   },
 
   async delete(id: string): Promise<void> {
     await apiClient.delete(`/modulos/${id}`)
   },
+
+   async editarReferenciasWord(moduloId: string, referencias: string[]): Promise<{ message: string }> {
+    const response = await apiClient.patch(`/modulos/${moduloId}/referencias`, { referencias })
+    return response.data
+  },
+
+    async asignarDocumento(moduloId: string, documentoId: string): Promise<{ message: string; nuevaRuta: string }> {
+    const response = await apiClient.post(`/modulos/${moduloId}/documentos/${documentoId}`)
+    return response.data
+  },
+
 }

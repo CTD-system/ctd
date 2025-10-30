@@ -1,4 +1,5 @@
 import apiClient from "./api-client"
+import { Modulo } from "./modulos"
 import type { Usuario } from "./usuarios"
 
 export enum ExpedienteEstado {
@@ -17,6 +18,7 @@ export interface Expediente {
   creado_por: Usuario
   creado_en: string
   actualizado_en: string
+  modulos: Modulo[]
 }
 
 export interface CreateExpedienteData {
@@ -50,11 +52,18 @@ export const expedientesService = {
   },
 
   async update(id: string, data: UpdateExpedienteData): Promise<Expediente> {
-    const response = await apiClient.put(`/expedientes/${id}`, data)
+    const response = await apiClient.patch(`/expedientes/${id}`, data)
     return response.data
   },
 
   async delete(id: string): Promise<void> {
-    await apiClient.delete(`/expedientes/${id}`)
+    await apiClient.delete(`/expedientes/${id}/cascade`)
+  },
+
+  async asignarModulo(expedienteId: string, moduloId: string): Promise<any> {
+    const response = await apiClient.post(
+      `/expedientes/${encodeURIComponent(expedienteId)}/modulos/${encodeURIComponent(moduloId)}`
+    );
+    return response.data;
   },
 }
