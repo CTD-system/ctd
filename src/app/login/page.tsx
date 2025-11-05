@@ -13,6 +13,7 @@ import { useToast } from "@/src/hooks/use-toast"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
+  const [username,setUsername]=useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const { login } = useAuth()
@@ -24,7 +25,7 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      await login(email, password)
+      await login(username, password)
       toast({
         title: "Inicio de sesión exitoso",
         description: "Bienvenido al sistema",
@@ -51,13 +52,13 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Correo electrónico</Label>
+              <Label htmlFor="username">Nombre de Usuario</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="usuario@ejemplo.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="username"
+                type="username"
+                placeholder="nombre de usuario"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
               />
             </div>

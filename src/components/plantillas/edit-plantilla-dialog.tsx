@@ -12,6 +12,8 @@ import {
   type Bloque,
 } from "@/src/lib/plantillas";
 import { useToast } from "@/src/hooks/use-toast";
+import { DropzoneImagen } from "./dropZoneImage";
+import { v4 as uuid } from "uuid"
 
 interface EditPlantillaPageProps {
   plantilla: Plantilla;
@@ -39,6 +41,15 @@ export function EditPlantillaPage({
   const { toast } = useToast();
 
   useEffect(() => {
+
+    function ensureIds(bloques: Bloque[]): Bloque[] {
+    return bloques.map((b) => ({
+      ...b,
+      id: b.id ?? uuid(),
+    }))
+  }
+  
+  
     setFormData({
       nombre: plantilla.nombre,
       descripcion: plantilla.descripcion,
@@ -50,7 +61,11 @@ export function EditPlantillaPage({
       tamano_fuente: plantilla.tamano_fuente ?? 12,
       color_texto: plantilla.color_texto ?? "#000000",
       autogenerar_indice: plantilla.autogenerar_indice ?? false,
-      estructura: plantilla.estructura ?? { tipo: "documento", bloques: [] },
+      estructura: {
+  tipo: "documento", // <--- fuerza el literal correcto
+  bloques: ensureIds(plantilla.estructura?.bloques ?? [])
+}
+
     });
   }, [plantilla]);
 
@@ -82,19 +97,19 @@ export function EditPlantillaPage({
     switch (tipo) {
       case "capitulo":
       case "subcapitulo":
-        nuevoBloque = { tipo, titulo: "", bloques: [] };
+        nuevoBloque = { id: uuid(),tipo, titulo: "", bloques: [] };
         break;
       case "parrafo":
-        nuevoBloque = { tipo, texto_html: "", texto_plano: "" };
+        nuevoBloque = { id: uuid(),tipo, texto_html: "", texto_plano: "" };
         break;
       case "tabla":
-        nuevoBloque = { tipo, encabezados: [], filas: [] };
+        nuevoBloque = { id: uuid(),tipo, encabezados: [], filas: [] };
         break;
       case "imagen":
-        nuevoBloque = { tipo, src: "" };
+        nuevoBloque = { id: uuid(),tipo, src: "" };
         break;
       case "placeholder":
-        nuevoBloque = { tipo, clave: "" };
+        nuevoBloque = { id: uuid(),tipo, clave: "" };
         break;
     }
     setFormData({
@@ -344,7 +359,7 @@ export function EditPlantillaPage({
   ): React.ReactNode => {
     return (
       <div
-        key={index}
+       
         className="border p-4 rounded bg-gray-50 space-y-2"
         style={{ marginLeft: `${nivel * 20}px` }}
       >
@@ -375,12 +390,14 @@ export function EditPlantillaPage({
               }
             />
             {bloque.bloques?.map((subBloque, subIndex) =>
-              renderBloqueEditable(subBloque, subIndex, nivel + 1)
+               <div key={subBloque.id}>
+    {renderBloqueEditable(subBloque, subIndex, nivel + 1)}
+  </div>
             )}
           </div>
         ) : bloque.tipo === "parrafo" ? (
           <Textarea
-            placeholder="Texto HTML"
+            placeholder="Texto"
             rows={3}
             value={bloque.texto_html}
             onChange={(e) =>
@@ -394,19 +411,31 @@ export function EditPlantillaPage({
           />
         ) : bloque.tipo === "tabla" ? (
           renderTablaEditable(bloque, index, nivel)
-        ) : bloque.tipo === "imagen" ? (
-          <Input
-            placeholder="URL de la imagen"
-            value={bloque.src}
-            onChange={(e) =>
-              actualizarBloque(index, {
-                ...bloque,
-                src: e.target.value,
-              } as Bloque)
-            }
-            className="mb-3"
-          />
-        ) : bloque.tipo === "placeholder" ? (
+        )  : bloque.tipo === "imagen" ? (
+  <div className="space-y-2">
+    <DropzoneImagen
+      value={bloque.src}
+      onChange={(url) => {
+        let newSrc = url;
+
+        // Detectar EMF y mostrar alerta si es el caso
+        if (url.startsWith("data:image/x-emf") || url.endsWith(".emf")) {
+          alert(
+            "⚠️ La imagen es un EMF y no se puede previsualizar en el navegador."
+          );
+        }
+
+        actualizarBloque(index, {
+          ...bloque,
+          src: newSrc,
+        } as Bloque);
+      }}
+    />
+    
+  </div>
+)
+
+: bloque.tipo === "placeholder" ? (
           <Input
             placeholder="Clave del placeholder"
             value={bloque.clave}
@@ -481,7 +510,9 @@ export function EditPlantillaPage({
 
           <div className="space-y-4">
             {formData.estructura.bloques.map((bloque, index) =>
-              renderBloqueEditable(bloque, index)
+               <div key={bloque.id}>   
+    {renderBloqueEditable(bloque, index)}
+  </div>
             )}
           </div>
         </div>

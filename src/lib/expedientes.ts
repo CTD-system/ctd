@@ -6,7 +6,6 @@ export enum ExpedienteEstado {
   BORRADOR = "borrador",
   EN_REVISION = "en_revision",
   APROBADO = "aprobado",
-  ENVIADO = "enviado",
 }
 
 export interface Expediente {

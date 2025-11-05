@@ -108,7 +108,7 @@ export function CreateExpedienteDialog({ open, onOpenChange, onSuccess }: Create
                   <SelectItem value="borrador">Borrador</SelectItem>
                   <SelectItem value="en_revision">En Revisión</SelectItem>
                   <SelectItem value="aprobado">Aprobado</SelectItem>
-                  <SelectItem value="enviado">Enviado</SelectItem>
+                 
                 </SelectContent>
               </Select>
             </div>

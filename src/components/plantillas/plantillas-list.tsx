@@ -66,18 +66,20 @@ export function PlantillasList({ plantillas,onEdit, isLoading, onUpdate }: Plant
 
   const handleDuplicate = async (plantilla: Plantilla) => {
     try {
+      const plant =  await plantillasService.getById(plantilla.id)
+     
       await plantillasService.create({
-        nombre: `${plantilla.nombre} (Copia)`,
-        descripcion: plantilla.descripcion,
-        tipo_archivo: plantilla.tipo_archivo,
-        titulo: plantilla.titulo,
-        encabezado: plantilla.encabezado,
-        pie_pagina: plantilla.pie_pagina,
-        fuente: plantilla.fuente,
-        tamano_fuente: plantilla.tamano_fuente,
-        color_texto: plantilla.color_texto,
-        autogenerar_indice: plantilla.autogenerar_indice,
-        estructura: plantilla.estructura,
+        nombre: `${plant.nombre} (Copia)`,
+        descripcion: plant.descripcion,
+        tipo_archivo: plant.tipo_archivo,
+        titulo: plant.titulo,
+        encabezado: plant.encabezado,
+        pie_pagina: plant.pie_pagina,
+        fuente: plant.fuente,
+        tamano_fuente: plant.tamano_fuente,
+        color_texto: plant.color_texto,
+        autogenerar_indice: plant.autogenerar_indice,
+        estructura: plant.estructura
       });
       toast({
         title: "Plantilla duplicada",

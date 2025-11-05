@@ -8,6 +8,7 @@ import { Label } from "@/src/components/ui/label";
 import { Textarea } from "@/src/components/ui/textarea";
 import { plantillasService } from "@/src/lib/plantillas";
 import { useToast } from "@/src/hooks/use-toast";
+import { DropzoneImagen } from "./dropZoneImage";
 
 export type Bloque =
   | { tipo: "capitulo" | "subcapitulo"; titulo: string; bloques?: Bloque[] }
@@ -52,14 +53,80 @@ export function CreatePlantillaPage({ onSuccess }: CreatePlantillaPageProps) {
     autogenerar_indice: false,
     estructura: { tipo: "documento", bloques: [] },
   });
+  
 
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+
+    if (formData.estructura.bloques.length === 0) {
+  toast({
+    title: "Estructura incompleta",
+    description: "La plantilla debe tener al menos 1 bloque.",
+    variant: "destructive",
+  })
+  setIsLoading(false)
+  return
+}
+
+    const bloquesSanitizados = formData.estructura.bloques.map((b,i) => {
+  switch(b.tipo) {
+
+    case "capitulo":
+    case "subcapitulo":
+      return {
+        ...b,
+        titulo: b.titulo.trim() || `${b.tipo} ${i+1}`
+      }
+
+    case "parrafo":
+      return {
+        ...b,
+        texto_html: b.texto_html.trim() || `(párrafo ${i+1})`,
+        texto_plano: (b.texto_html.trim() || `(párrafo ${i+1})`).replace(/<[^>]+>/g,"")
+      }
+
+    case "imagen":
+      return {
+        ...b,
+        // esto por si src quedó vacío
+        alt: b.alt?.trim() || `imagen ${i+1}`
+      }
+
+    case "placeholder":
+      return {
+        ...b,
+        clave: b.clave.trim() || `placeholder_${i+1}`
+      }
+
+    case "tabla":
+      // si una tabla está totalmente vacía → al menos 1 columna y 1 fila default
+      if (b.encabezados.length === 0) {
+        return {
+          ...b,
+          encabezados: ["Columna 1"],
+          filas: [[""]]
+        }
+      }
+      return b
+  }
+})
+
+
+ const payload = {
+    ...formData,
+    estructura: {
+      ...formData.estructura,
+      bloques: bloquesSanitizados
+    }
+  }
+
     try {
-      await plantillasService.create(formData);
+      
+
+      await plantillasService.create(payload);
       toast({
         title: "Plantilla creada",
         description: "La plantilla ha sido creada correctamente",
@@ -307,7 +374,7 @@ export function CreatePlantillaPage({ onSuccess }: CreatePlantillaPageProps) {
                 )}
                 {bloque.tipo === "parrafo" && (
                   <Textarea
-                    placeholder="Texto HTML"
+                    placeholder="Texto"
                     rows={3}
                     value={bloque.texto_html}
                     onChange={(e) =>
@@ -320,17 +387,14 @@ export function CreatePlantillaPage({ onSuccess }: CreatePlantillaPageProps) {
                   />
                 )}
                 {bloque.tipo === "imagen" && (
-                  <Input
-                    placeholder="URL de la imagen"
+                  <DropzoneImagen
                     value={bloque.src}
-                    onChange={(e) =>
-                      actualizarBloque(index, {
-                        ...bloque,
-                        src: e.target.value,
-                      } as Bloque)
+                    onChange={(url) =>
+                      actualizarBloque(index, { ...bloque, src: url } as Bloque)
                     }
                   />
                 )}
+
                 {bloque.tipo === "placeholder" && (
                   <Input
                     placeholder="Clave del placeholder"
@@ -344,98 +408,118 @@ export function CreatePlantillaPage({ onSuccess }: CreatePlantillaPageProps) {
                   />
                 )}
                 {bloque.tipo === "tabla" && (
-  <div className="overflow-x-auto">
-    <div className="flex gap-2 mb-2">
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        onClick={() => agregarFilaTabla(index)}
-        disabled={bloque.encabezados.length === 0} // no agregar fila si no hay columnas
-      >
-        Agregar Fila
-      </Button>
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        onClick={() => agregarColumnaTabla(bloque, index)}
-      >
-        Agregar Columna
-      </Button>
-    </div>
+                  <div className="overflow-x-auto">
+                    <div className="flex gap-2 mb-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => agregarFilaTabla(index)}
+                        disabled={bloque.encabezados.length === 0} // no agregar fila si no hay columnas
+                      >
+                        Agregar Fila
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => agregarColumnaTabla(bloque, index)}
+                      >
+                        Agregar Columna
+                      </Button>
+                    </div>
 
-    {bloque.encabezados.length > 0 ? (
-      <table className="table-auto border-collapse border border-gray-300 w-full text-sm">
-        <thead>
-          <tr>
-            {bloque.encabezados.map((enc: any, colIndex: number) => (
-              <th
-                key={colIndex}
-                className="border p-1 border-gray-300 relative"
-              >
-                <Input
-                  value={enc.text}
-                  onChange={(e) => {
-                    const nuevosEncabezados = bloque.encabezados.map(
-                      (h: any, i: number) =>
-                        i === colIndex ? { ...h, text: e.target.value } : h
-                    );
-                    actualizarBloque(index, {
-                      ...bloque,
-                      encabezados: nuevosEncabezados,
-                    });
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    eliminarColumnaTabla(bloque, colIndex, index)
-                  }
-                  className="absolute top-1 right-1 text-red-500 hover:text-red-700"
-                  title="Eliminar columna"
-                >
-                  ✖
-                </button>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {bloque.filas.map((fila, rowIndex) => (
-            <tr key={rowIndex}>
-              {fila.map((celda, colIndex) => (
-                <td key={colIndex} className="border p-1 border-gray-300 relative">
-                  <Input
-                    value={celda}
-                    onChange={(e) =>
-                      actualizarCeldaTabla(bloque, rowIndex, colIndex, e.target.value, index)
-                    }
-                  />
-                </td>
-              ))}
-              <td className="border p-2 w-10 text-center">
-                <button
-                  type="button"
-                  onClick={() => eliminarFilaTabla(bloque, rowIndex, index)}
-                  className="text-red-500 hover:text-red-700"
-                  title="Eliminar fila"
-                >
-                  ✖
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    ) : (
-      <p className="text-sm text-muted-foreground">
-        La tabla no tiene columnas. Agrega al menos una columna para mostrarla.
-      </p>
-    )}
-  </div>
-)}
-
+                    {bloque.encabezados.length > 0 ? (
+                      <table className="table-auto border-collapse border border-gray-300 w-full text-sm">
+                        <thead>
+                          <tr>
+                            {bloque.encabezados.map(
+                              (enc: any, colIndex: number) => (
+                                <th
+                                  key={colIndex}
+                                  className="border p-1 border-gray-300 relative"
+                                >
+                                  <Input
+                                    value={enc.text}
+                                    onChange={(e) => {
+                                      const nuevosEncabezados =
+                                        bloque.encabezados.map(
+                                          (h: any, i: number) =>
+                                            i === colIndex
+                                              ? { ...h, text: e.target.value }
+                                              : h
+                                        );
+                                      actualizarBloque(index, {
+                                        ...bloque,
+                                        encabezados: nuevosEncabezados,
+                                      });
+                                    }}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      eliminarColumnaTabla(
+                                        bloque,
+                                        colIndex,
+                                        index
+                                      )
+                                    }
+                                    className="absolute top-1 right-1 text-red-500 hover:text-red-700"
+                                    title="Eliminar columna"
+                                  >
+                                    ✖
+                                  </button>
+                                </th>
+                              )
+                            )}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {bloque.filas.map((fila, rowIndex) => (
+                            <tr key={rowIndex}>
+                              {fila.map((celda, colIndex) => (
+                                <td
+                                  key={colIndex}
+                                  className="border p-1 border-gray-300 relative"
+                                >
+                                  <Input
+                                    value={celda}
+                                    onChange={(e) =>
+                                      actualizarCeldaTabla(
+                                        bloque,
+                                        rowIndex,
+                                        colIndex,
+                                        e.target.value,
+                                        index
+                                      )
+                                    }
+                                  />
+                                </td>
+                              ))}
+                              <td className="border p-2 w-10 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    eliminarFilaTabla(bloque, rowIndex, index)
+                                  }
+                                  className="text-red-500 hover:text-red-700"
+                                  title="Eliminar fila"
+                                >
+                                  ✖
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        La tabla no tiene columnas. Agrega al menos una columna
+                        para mostrarla.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>

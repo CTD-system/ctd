@@ -1,28 +1,34 @@
+import { UUIDTypes } from "uuid"
 import apiClient from "./api-client"
 import type { Usuario } from "./usuarios"
 
 export type Bloque =
   | {
+    id?:string
       tipo: "capitulo" | "subcapitulo"
       titulo: string
       bloques?: Bloque[]
     }
   | {
+    id?:string
       tipo: "parrafo"
       texto_html: string
       texto_plano:string
     }
   | {
+    id?:string
       tipo: "tabla"
       encabezados: string[]
       filas: string[][]
     }
   | {
+      id?:string
       tipo: "imagen"
       src: string
       alt?: string
     }
   | {
+    id?:string
       tipo: "placeholder"
       clave: string
       descripcion?: string

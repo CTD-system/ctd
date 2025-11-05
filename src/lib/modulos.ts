@@ -78,4 +78,10 @@ export const modulosService = {
     return response.data
   },
 
+    async obtenerReferenciasWord(moduloId: string): Promise<string[]> {
+    const response = await apiClient.get(`/modulos/${moduloId}/referencias-word`)
+    return response.data
+  },
+
+
 }

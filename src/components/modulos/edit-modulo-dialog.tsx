@@ -47,7 +47,20 @@ export function EditModuloDialog({ modulo, open, onOpenChange, onSuccess }: Edit
       })
       setReferencias([])
       setTabValue("datos")
+        const cargarReferencias = async () => {
+      if (modulo.referencias_word_nombre) {
+        const refsDB = await modulosService.obtenerReferenciasWord(modulo.id)
+        setReferencias(refsDB)
+      } else {
+        setReferencias([]) // no tiene archivo referencias → vacío
+      }
     }
+
+    cargarReferencias()
+  }
+    
+
+    
   }, [open, modulo])
 
   const handleAddReferencia = () => setReferencias([...referencias, ""])
