@@ -45,7 +45,7 @@ export function CreateModuloDialog({
 
     titulo: "",
     descripcion: "",
-    estado: "BORRADOR",
+    estado: "",
     crearIndiceWord: true,
     crearReferenciasWord: false,
   });
@@ -79,6 +79,23 @@ export function CreateModuloDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.expediente_id || formData.expediente_id.trim() === "") {
+    toast({
+      title: "Falta expediente",
+      description: "Debe seleccionar un expediente.",
+      variant: "destructive",
+    });
+    return;
+  }
+
+   if (!formData.estado || formData.estado.trim() === "") {
+    toast({
+      title: "Falta estado",
+      description: "Debe seleccionar un estado para el módulo.",
+      variant: "destructive",
+    });
+    return;
+  }
     setIsLoading(true);
 
     try {
@@ -108,7 +125,7 @@ export function CreateModuloDialog({
       onOpenChange(false);
 
       // Resetear formulario
-      setFormData({
+      setFormData({ 
         expediente_id: "",
         modulo_contenedor_id: "",
 

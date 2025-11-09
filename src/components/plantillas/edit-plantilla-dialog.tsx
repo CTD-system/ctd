@@ -72,8 +72,86 @@ export function EditPlantillaPage({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+
+     // VALIDAR que no se repita nombre
+  const existentes = await plantillasService.getAll(); // o método equivalente
+  const existeNombre = existentes.some(
+    (p: any) => p.nombre.toLowerCase().trim() === formData.nombre.toLowerCase().trim()
+  );
+
+  if (existeNombre) {
+    toast({
+      title: "Nombre duplicado",
+      description: "Ya existe una plantilla con ese nombre.",
+      variant: "destructive",
+    });
+    setIsLoading(false);
+    return;
+  }
+
+
+     if (formData.estructura.bloques.length === 0) {
+  toast({
+    title: "Estructura incompleta",
+    description: "La plantilla debe tener al menos 1 bloque.",
+    variant: "destructive",
+  })
+  setIsLoading(false)
+  return
+}
+
+const bloquesSanitizados = formData.estructura.bloques.map((b,i) => {
+  switch(b.tipo) {
+
+    case "capitulo":
+    case "subcapitulo":
+      return {
+        ...b,
+        titulo: b.titulo.trim() || `${b.tipo} ${i+1}`
+      }
+
+    case "parrafo":
+      return {
+        ...b,
+        texto_html: b.texto_html.trim() || `(párrafo ${i+1})`,
+        texto_plano: (b.texto_html.trim() || `(párrafo ${i+1})`).replace(/<[^>]+>/g,"")
+      }
+
+    case "imagen":
+      return {
+        ...b,
+        // esto por si src quedó vacío
+        alt: b.alt?.trim() || `imagen ${i+1}`
+      }
+
+    case "placeholder":
+      return {
+        ...b,
+        clave: b.clave.trim() || `Control de contenido_${i+1}`
+      }
+
+    case "tabla":
+      // si una tabla está totalmente vacía → al menos 1 columna y 1 fila default
+      if (b.encabezados.length === 0) {
+        return {
+          ...b,
+          encabezados: ["Columna 1"],
+          filas: [[""]]
+        }
+      }
+      return b
+  }
+})
+
+const payload = {
+    ...formData,
+    estructura: {
+      ...formData.estructura,
+      bloques: bloquesSanitizados
+    }
+  }
     try {
-      await plantillasService.update(plantilla.id, formData);
+      await plantillasService.update(plantilla.id, payload);
       toast({
         title: "Plantilla actualizada",
         description: "La plantilla ha sido actualizada correctamente",
@@ -365,7 +443,7 @@ export function EditPlantillaPage({
       >
         <div className="flex justify-between items-center mb-2">
           <span className="font-medium">
-            {index + 1}. {bloque.tipo}
+            {index + 1}. {bloque.tipo === 'placeholder'? 'Control de contenido':bloque.tipo}
           </span>
           <Button
             type="button"
@@ -437,7 +515,7 @@ export function EditPlantillaPage({
 
 : bloque.tipo === "placeholder" ? (
           <Input
-            placeholder="Clave del placeholder"
+            placeholder="Clave del Control de contenido"
             value={bloque.clave}
             onChange={(e) =>
               actualizarBloque(index, {
@@ -503,7 +581,7 @@ export function EditPlantillaPage({
                 variant="outline"
                 onClick={() => agregarBloque(tipo as Bloque["tipo"])}
               >
-                {i + 1}. Agregar {tipo}
+                {i + 1}. Agregar {tipo==='placeholder'? 'Control de contenido':tipo}
               </Button>
             ))}
           </div>

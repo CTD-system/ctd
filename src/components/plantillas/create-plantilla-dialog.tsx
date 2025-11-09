@@ -61,6 +61,23 @@ export function CreatePlantillaPage({ onSuccess }: CreatePlantillaPageProps) {
     e.preventDefault();
     setIsLoading(true);
 
+     // VALIDAR que no se repita nombre
+  const existentes = await plantillasService.getAll(); // o método equivalente
+  const existeNombre = existentes.some(
+    (p: any) => p.nombre.toLowerCase().trim() === formData.nombre.toLowerCase().trim()
+  );
+
+  if (existeNombre) {
+    toast({
+      title: "Nombre duplicado",
+      description: "Ya existe una plantilla con ese nombre.",
+      variant: "destructive",
+    });
+    setIsLoading(false);
+    return;
+  }
+
+
     if (formData.estructura.bloques.length === 0) {
   toast({
     title: "Estructura incompleta",
@@ -98,7 +115,7 @@ export function CreatePlantillaPage({ onSuccess }: CreatePlantillaPageProps) {
     case "placeholder":
       return {
         ...b,
-        clave: b.clave.trim() || `placeholder_${i+1}`
+        clave: b.clave.trim() || `Control de contenido_${i+1}`
       }
 
     case "tabla":
@@ -324,7 +341,7 @@ export function CreatePlantillaPage({ onSuccess }: CreatePlantillaPageProps) {
               "parrafo",
               "tabla",
               "imagen",
-              "placeholder",
+              "Control de contenido",
             ].map((tipo, i) => (
               <Button
                 key={tipo}
@@ -397,7 +414,7 @@ export function CreatePlantillaPage({ onSuccess }: CreatePlantillaPageProps) {
 
                 {bloque.tipo === "placeholder" && (
                   <Input
-                    placeholder="Clave del placeholder"
+                    placeholder="Clave del Control de contenido"
                     value={bloque.clave}
                     onChange={(e) =>
                       actualizarBloque(index, {
