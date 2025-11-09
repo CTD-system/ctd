@@ -186,7 +186,7 @@ export function DocumentosList({
                     </Button>
 
                     {/* 🧩 Mostrar solo si el documento no es plantilla */}
-                    {documento.tipo !== DocumentoTipo.PLANTILLA && (
+                    {documento.tipo === DocumentoTipo.INFORME && (
                       <Button
                         variant="ghost"
                         size="icon"

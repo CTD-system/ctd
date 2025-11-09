@@ -63,7 +63,9 @@ export function UploadDocumentoDialog({
     fetchModulos();
   }, [toast]);
 
-  const acceptWord = (file?: File | null) => !!file && /\.(doc|docx)$/i.test(file.name);
+  const acceptWord = (file?: File | null) =>
+  !!file && /\.(doc|docx|pdf|rtf)$/i.test(file.name);
+
 
   const addFiles = useCallback(
     (newFiles: FileList | File[]) => {
@@ -216,7 +218,7 @@ export function UploadDocumentoDialog({
               <input
                 id="upload-word-input"
                 type="file"
-                accept=".doc,.docx"
+                 accept=".doc,.docx,.pdf,.rtf"
                 onChange={handleFileChange}
                 disabled={isLoading}
                 className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
@@ -236,7 +238,7 @@ export function UploadDocumentoDialog({
               </div>
 
               <p className="text-xs text-muted-foreground text-center mt-2">
-                Solo se aceptan archivos .doc y .docx. Tamaño máximo recomendado: 50MB.
+                Solo  se aceptan archivos Word (.doc, .docx), PDF y RTF. Tamaño máximo recomendado: 50MB.
               </p>
             </div>
 
@@ -288,11 +290,22 @@ export function UploadDocumentoDialog({
                               <SelectValue placeholder="Tipo" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="PLANTILLA">Plantilla</SelectItem>
-                              <SelectItem value="ANEXO">Anexo</SelectItem>
-                              <SelectItem value="INFORME">Informe</SelectItem>
-                              <SelectItem value="OTRO">Otro</SelectItem>
-                            </SelectContent>
+  {/* si es Word, mostrar todas */}
+  {/\.(doc|docx)$/i.test(f.file.name) ? (
+    <>
+      <SelectItem value="PLANTILLA">Plantilla</SelectItem>
+      <SelectItem value="ANEXO">Anexo</SelectItem>
+      <SelectItem value="INFORME">Informe</SelectItem>
+      <SelectItem value="OTRO">Otro</SelectItem>
+    </>
+  ) : (
+    <>
+      {/* si NO es Word (pdf/rtf) solo esto */}
+      <SelectItem value="ANEXO">Anexo</SelectItem>
+      <SelectItem value="OTRO">Otro</SelectItem>
+    </>
+  )}
+</SelectContent>
                           </Select>
 
                           <Button
