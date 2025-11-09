@@ -1,13 +1,14 @@
 "use client";
 
 import type React from "react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/src/components/ui/dialog";
 import { Button } from "@/src/components/ui/button";
 import { Label } from "@/src/components/ui/label";
 import { Upload, FileArchive, X, Loader2 } from "lucide-react";
 import { useToast } from "@/src/hooks/use-toast";
 import { minioService } from "@/src/lib/minio";
+import { expedientesService } from "@/src/lib/expedientes";
 
 interface ImportExpedienteDialogProps {
   open: boolean;
@@ -20,20 +21,47 @@ export function ImportExpedienteDialog({ open, onOpenChange, onSuccess }: Import
   const [isLoading, setIsLoading] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
   const { toast } = useToast();
+const [existingListNames, setExistingListNames] = useState<string[] | null>(null);
+  useEffect(() => {
+  if (open && !existingListNames) {
+    expedientesService.getAll().then((arr) => {
+  setExistingListNames(arr.map(e => e.nombre));
+});
+  }
+}, [open]);
 
   const acceptZip = (f?: File | null) => !!f && f.name.toLowerCase().endsWith(".zip");
 
   const addFiles = useCallback((newFiles: FileList | File[]) => {
     const arr = Array.from(newFiles);
+    
     const valid = arr.filter((f) => {
+      const baseName = f.name.replace(/\.zip$/i, "");
       if (!acceptZip(f)) {
         toast({
           title: "Archivo ignorado",
           description: `${f.name} no es un ZIP y fue ignorado.`,
           variant: "destructive",
         });
+        
         return false;
       }
+        if (f.size > 200 * 1024 * 1024) {
+    toast({
+      title: "Archivo muy grande",
+      description: `${f.name} supera los 200MB y fue ignorado.`,
+      variant: "destructive",
+    });
+    return false;
+  }
+  if (existingListNames?.includes(baseName)) {
+  toast({
+    title: "Nombre duplicado",
+    description: `Ya existe un expediente llamado "${baseName}".`,
+    variant: "destructive",
+  });
+  return false;
+}
       return true;
     });
 
