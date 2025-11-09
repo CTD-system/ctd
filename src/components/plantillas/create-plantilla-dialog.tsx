@@ -222,6 +222,22 @@ export function CreatePlantillaPage({ onSuccess }: CreatePlantillaPageProps) {
     });
   };
 
+  const copiarTabla = (index: number) => {
+  const bloqueOriginal = formData.estructura.bloques[index];
+  if (bloqueOriginal.tipo !== "tabla") return;
+
+  const copia = JSON.parse(JSON.stringify(bloqueOriginal)); // deep clone
+
+  const nuevosBloques = [...formData.estructura.bloques];
+  nuevosBloques.splice(index + 1, 0, copia); // insertar debajo
+
+  setFormData({
+    ...formData,
+    estructura: { ...formData.estructura, bloques: nuevosBloques },
+  });
+};
+
+
   const agregarFilaTabla = (indexBloque: number) => {
     const bloques = [...formData.estructura.bloques];
     const bloque = bloques[indexBloque];
@@ -373,6 +389,7 @@ export function CreatePlantillaPage({ onSuccess }: CreatePlantillaPageProps) {
                   >
                     X
                   </Button>
+  
                 </div>
 
                 {/* Campos por tipo */}
@@ -444,6 +461,14 @@ export function CreatePlantillaPage({ onSuccess }: CreatePlantillaPageProps) {
                       >
                         Agregar Columna
                       </Button>
+                      <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => copiarTabla(index)}
+                        >
+                          Copiar Tabla
+                        </Button>
                     </div>
 
                     {bloque.encabezados.length > 0 ? (

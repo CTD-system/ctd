@@ -76,8 +76,10 @@ export function EditPlantillaPage({
      // VALIDAR que no se repita nombre
   const existentes = await plantillasService.getAll(); // o método equivalente
   const existeNombre = existentes.some(
-    (p: any) => p.nombre.toLowerCase().trim() === formData.nombre.toLowerCase().trim()
-  );
+  (p: any) =>
+    p.id !== plantilla.id && // <<--- NO comparar contra la misma
+    p.nombre.toLowerCase().trim() === formData.nombre.toLowerCase().trim()
+);
 
   if (existeNombre) {
     toast({
@@ -245,6 +247,22 @@ const payload = {
       estructura: { ...formData.estructura, bloques: nuevosBloques },
     });
   };
+  const copiarTabla = (index: number) => {
+    const original = formData.estructura.bloques[index];
+  if (original.tipo !== "tabla") return;
+
+   const copia = JSON.parse(JSON.stringify(original));
+  copia.id = uuid(); // NUEVO ID
+
+  const nuevosBloques = [...formData.estructura.bloques];
+  nuevosBloques.splice(index + 1, 0, copia); // insertar debajo
+
+  setFormData({
+    ...formData,
+    estructura: { ...formData.estructura, bloques: nuevosBloques },
+  });
+};
+
 
   const agregarFilaTabla = (indexBloque: number) => {
     const bloques = [...formData.estructura.bloques];
@@ -312,6 +330,14 @@ const payload = {
         >
           Agregar Columna
         </Button>
+        <Button
+    type="button"
+    size="sm"
+    variant="outline"
+    onClick={() => copiarTabla(index)}
+  >
+    Copiar Tabla
+  </Button>
       </div>
 
       {tieneColumnas ? (
@@ -453,6 +479,7 @@ const payload = {
           >
             X
           </Button>
+          
         </div>
 
         {bloque.tipo === "capitulo" || bloque.tipo === "subcapitulo" ? (
