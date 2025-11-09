@@ -341,7 +341,7 @@ export function CreatePlantillaPage({ onSuccess }: CreatePlantillaPageProps) {
               "parrafo",
               "tabla",
               "imagen",
-              "Control de contenido",
+              "placeholder",
             ].map((tipo, i) => (
               <Button
                 key={tipo}
@@ -350,7 +350,7 @@ export function CreatePlantillaPage({ onSuccess }: CreatePlantillaPageProps) {
                 variant="outline"
                 onClick={() => agregarBloque(tipo as Bloque["tipo"])}
               >
-                {i + 1}. Agregar {tipo}
+                {i + 1}. Agregar {tipo==='placeholder'? 'Control de contenido':tipo}
               </Button>
             ))}
           </div>
@@ -363,7 +363,7 @@ export function CreatePlantillaPage({ onSuccess }: CreatePlantillaPageProps) {
               >
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-medium">
-                    {index + 1}. {bloque.tipo}
+                    {index + 1}. {bloque.tipo === 'placeholder'? 'Control de contenido':bloque.tipo}
                   </span>
                   <Button
                     type="button"
