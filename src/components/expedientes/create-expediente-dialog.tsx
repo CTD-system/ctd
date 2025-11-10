@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/src/components/ui/button"
 import {
   Dialog,
@@ -34,6 +34,19 @@ export function CreateExpedienteDialog({ open, onOpenChange, onSuccess }: Create
     estado: ExpedienteEstado.BORRADOR,
   })
   const { toast } = useToast()
+
+  useEffect(() => {
+       if (!open) {
+      // cuando cierre → reseteo
+      setFormData({
+        
+        codigo: "",
+        nombre: "",
+        descripcion: "",
+        estado: ExpedienteEstado.BORRADOR,       // ojo: aquí debe ir el value 
+      });
+    }
+    }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

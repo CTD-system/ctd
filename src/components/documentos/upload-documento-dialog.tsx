@@ -174,9 +174,9 @@ export function UploadDocumentoDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl w-[min(92%,720px)] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Subir Documentos Word</DialogTitle>
+          <DialogTitle>Subir Documentos</DialogTitle>
           <DialogDescription>
-            Arrastra o selecciona uno o varios documentos .doc o .docx para subir.
+            Arrastra o selecciona uno o varios documentos .doc , .docx , .pdf , .rtf para subir.
           </DialogDescription>
         </DialogHeader>
 
@@ -200,7 +200,7 @@ export function UploadDocumentoDialog({
 
           {/* Zona de drop */}
           <div>
-            <Label>Archivos Word</Label>
+            <Label>Archivos</Label>
             <div
               role="button"
               tabIndex={0}
@@ -290,21 +290,30 @@ export function UploadDocumentoDialog({
                               <SelectValue placeholder="Tipo" />
                             </SelectTrigger>
                             <SelectContent>
-  {/* si es Word, mostrar todas */}
-  {/\.(doc|docx)$/i.test(f.file.name) ? (
-    <>
-      <SelectItem value="PLANTILLA">Plantilla</SelectItem>
-      <SelectItem value="ANEXO">Anexo</SelectItem>
-      <SelectItem value="INFORME">Informe</SelectItem>
-      <SelectItem value="OTRO">Otro</SelectItem>
-    </>
-  ) : (
-    <>
-      {/* si NO es Word (pdf/rtf) solo esto */}
-      <SelectItem value="ANEXO">Anexo</SelectItem>
-      <SelectItem value="OTRO">Otro</SelectItem>
-    </>
-  )}
+  {/* si es Word */}
+{/\.docx$/i.test(f.file.name) ? (
+  // solo DOCX puede ser plantilla
+  <>
+    <SelectItem value="PLANTILLA">Plantilla</SelectItem>
+    <SelectItem value="ANEXO">Anexo</SelectItem>
+    <SelectItem value="INFORME">Informe</SelectItem>
+    <SelectItem value="OTRO">Otro</SelectItem>
+  </>
+) : /\.doc$/i.test(f.file.name) ? (
+  // DOC pero NO plantilla
+  <>
+    <SelectItem value="ANEXO">Anexo</SelectItem>
+    <SelectItem value="INFORME">Informe</SelectItem>
+    <SelectItem value="OTRO">Otro</SelectItem>
+  </>
+) : (
+  // NO es Word: pdf, rtf, jpeg, etc
+  <>
+    <SelectItem value="ANEXO">Anexo</SelectItem>
+    <SelectItem value="OTRO">Otro</SelectItem>
+  </>
+)}
+
 </SelectContent>
                           </Select>
 

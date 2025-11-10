@@ -105,12 +105,7 @@ export function ViewPlantillaDialog({
                 </p>
               </div>
             </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">
-                Título del Documento
-              </label>
-              <p className="text-base">{data.titulo}</p>
-            </div>
+            
             <div className="grid grid-cols-2 gap-4"></div>
             <div className="grid grid-cols-3 gap-4">
               <div>

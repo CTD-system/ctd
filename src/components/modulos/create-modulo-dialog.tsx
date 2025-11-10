@@ -53,6 +53,19 @@ export function CreateModuloDialog({
   const { toast } = useToast();
 
   useEffect(() => {
+     if (!open) {
+    // cuando cierre → reseteo
+    setFormData({
+      expediente_id: "",
+      modulo_contenedor_id: "",
+
+      titulo: "",
+      descripcion: "",
+      estado: "",       // ojo: aquí debe ir el value EXACTO que usas en Select (en minúscula)
+      crearIndiceWord: true,
+      crearReferenciasWord: false,
+    });
+  }
     if (open) {
       loadExpedientes();
       loadModulos();
@@ -128,7 +141,6 @@ export function CreateModuloDialog({
       setFormData({ 
         expediente_id: "",
         modulo_contenedor_id: "",
-
         titulo: "",
         descripcion: "",
         estado: "BORRADOR",

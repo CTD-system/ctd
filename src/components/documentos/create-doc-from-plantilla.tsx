@@ -70,6 +70,15 @@ export function CreateDocumentoFromPlantillaDialog({
       }
     };
     if (open) loadData();
+     if (!open) {
+    // reset only when closing
+    setSelectedPlantilla("");
+    setSelectedModulo("");
+    setSelectedAnexos([]);
+    setNombre("");
+    setTipo(DocumentoTipo.OTRO);
+  }
+    
   }, [open]);
 
   const handleToggleAnexo = (id: string) => {

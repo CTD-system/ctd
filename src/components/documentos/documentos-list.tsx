@@ -186,7 +186,7 @@ export function DocumentosList({
                     </Button>
 
                     {/* 🧩 Mostrar solo si el documento no es plantilla */}
-                    {documento.tipo === DocumentoTipo.INFORME && (
+                    {documento.tipo === DocumentoTipo.INFORME && documento.mime_type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" && (
                       <Button
                         variant="ghost"
                         size="icon"
