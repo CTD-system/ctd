@@ -153,6 +153,7 @@ export function UploadDocumentoDialog({
       toast({
         title: "Éxito",
         description: `${wordFiles.length} documento(s) subido(s) correctamente.`,
+        variant: "success",
       });
 
       onSuccess();

@@ -69,6 +69,7 @@ export function ExpedientesList({
       toast({
         title: "Expediente eliminado",
         description: "El expediente ha sido eliminado correctamente",
+        variant: "success",
       });
       onUpdate();
     } catch (error: any) {

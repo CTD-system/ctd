@@ -56,6 +56,7 @@ export function DocumentosList({
       toast({
         title: "Documento eliminado",
         description: "El documento ha sido eliminado correctamente",
+        variant: "success",
       });
       onUpdate();
     } catch (error: any) {
@@ -93,6 +94,7 @@ export function DocumentosList({
     toast({
       title: "Plantilla generada",
       description: res.message,
+      variant: "success",
     });
 
     // 2️⃣ Actualizar el documento original a tipo PLANTILLA

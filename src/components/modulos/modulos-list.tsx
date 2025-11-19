@@ -58,7 +58,7 @@ export function ModulosList({ modulos, isLoading, onUpdate }: ModulosListProps) 
     if (!deletingModulo) return
     try {
       await modulosService.delete(deletingModulo.id)
-      toast({ title: "Módulo eliminado", description: "El módulo ha sido eliminado correctamente" })
+      toast({ title: "Módulo eliminado", description: "El módulo ha sido eliminado correctamente",variant: "success", })
       onUpdate()
     } catch (error: any) {
       toast({

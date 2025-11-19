@@ -57,6 +57,7 @@ export function CreateExpedienteDialog({ open, onOpenChange, onSuccess }: Create
       toast({
         title: "Expediente creado",
         description: "El expediente ha sido creado correctamente",
+        variant: "success",
       })
       onSuccess()
       onOpenChange(false)

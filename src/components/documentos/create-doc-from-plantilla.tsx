@@ -113,6 +113,7 @@ export function CreateDocumentoFromPlantillaDialog({
       toast({
         title: "Documento creado",
         description: "El documento se ha generado correctamente desde la plantilla.",
+        variant: "success",
       });
 
       onOpenChange(false);

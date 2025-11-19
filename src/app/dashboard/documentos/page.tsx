@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/src/components/ui/button"
 import { Input } from "@/src/components/ui/input"
-import { Plus, Search, Upload, Filter } from "lucide-react"
+import { Plus, Search, Upload, Filter, CircleAlert } from "lucide-react"
 import { DocumentosList } from "@/src/components/documentos/documentos-list"
 import { UploadDocumentoDialog } from "@/src/components/documentos/upload-documento-dialog"
 
@@ -18,6 +18,9 @@ import {
   SelectValue,
 } from "@/src/components/ui/select"
 import { mimeToExt } from "@/src/utils/mimeTypeTranslator"
+import { Card, CardContent } from "@/src/components/ui/card"
+import { modulosService } from "@/src/lib/modulos"
+import { plantillasService } from "@/src/lib/plantillas"
 
 export default function DocumentosPage() {
   const [documentos, setDocumentos] = useState<Documento[]>([])
@@ -26,7 +29,8 @@ export default function DocumentosPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [filterType, setFilterType] = useState<"tipo" | "modulo" | "mime" | "">("")
   const [filterValue, setFilterValue] = useState("all")
-
+  const [moduloList,setModuloList] = useState(0)
+  const [plantillaList,setPlantillaList] = useState(0)
   // ⭐ PAGINACIÓN
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
@@ -42,6 +46,10 @@ export default function DocumentosPage() {
     try {
       setIsLoading(true)
       const data = await documentosService.getAll()
+       const mod = await modulosService.getAll()
+       const plant = await plantillasService.getAll()
+       setModuloList(mod.length)
+       setPlantillaList(plant.length)
       setDocumentos(data)
     } catch (error: any) {
       toast({
@@ -108,7 +116,14 @@ export default function DocumentosPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Documentos</h1>
-          <p className="text-muted-foreground mt-2">Gestiona los documentos del sistema</p>
+          <p className="text-muted-foreground mt-2 mb-3">Gestiona los documentos del sistema</p>
+         {moduloList === 0 &&( <Card className="border border-yellow-500 w-md pt-1 pb-0 ">
+            <CardContent className="flex flex-row items-center gap-4">
+              <CircleAlert size={'80'} className="text-yellow-500 "/> No hay modulos  en el sistema, importe o crea
+              al menos uno para crear o importar documentos. {''} 
+              {plantillaList ===0 ? "No hay plantillas en el sistema cree una para crear un documento" :""}
+            </CardContent>
+          </Card>)}
         </div>
 
         <div className="flex gap-2">

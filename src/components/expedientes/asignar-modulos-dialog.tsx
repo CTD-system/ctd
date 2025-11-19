@@ -92,6 +92,7 @@ export function AsignarModulosDialog({
       toast({
         title: "Módulos asignados",
         description: `${selectedModulos.length} módulo(s) se asignaron correctamente.`,
+        variant: "success",
       })
 
       setSelectedModulos([])

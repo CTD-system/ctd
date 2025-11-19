@@ -88,7 +88,7 @@ export function EditModuloDialog({ modulo, open, onOpenChange, onSuccess }: Edit
         await modulosService.editarReferenciasWord(modulo.id, referenciasValidas)
       }
 
-      toast({ title: "Módulo actualizado", description: "Los cambios se guardaron correctamente." })
+      toast({ title: "Módulo actualizado", description: "Los cambios se guardaron correctamente.",variant: "success", })
       onSuccess()
       onOpenChange(false)
     } catch (error: any) {

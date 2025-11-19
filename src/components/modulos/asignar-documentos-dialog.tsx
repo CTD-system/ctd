@@ -88,6 +88,7 @@ export function AsignarDocumentosDialog({
       toast({
         title: "Documentos asignados",
         description: `${selectedDocs.length} documento(s) fueron agregados al módulo correctamente.`,
+        variant: "success",
       })
 
       setSelectedDocs([])

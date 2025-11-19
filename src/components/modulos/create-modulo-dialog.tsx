@@ -133,6 +133,7 @@ export function CreateModuloDialog({
       toast({
         title: "Módulo creado",
         description: "El módulo ha sido creado correctamente",
+        variant: "success",
       });
       onSuccess();
       onOpenChange(false);

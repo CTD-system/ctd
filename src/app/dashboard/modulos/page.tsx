@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Filter, Plus, Search, Upload } from "lucide-react";
+import { CircleAlert, Filter, Plus, Search, Upload } from "lucide-react";
 import { Modulo, modulosService } from "@/src/lib/modulos";
 import { useToast } from "@/src/hooks/use-toast";
 import { Button } from "@/src/components/ui/button";
@@ -9,7 +9,15 @@ import { Input } from "@/src/components/ui/input";
 import { ModulosList } from "@/src/components/modulos/modulos-list";
 import { CreateModuloDialog } from "@/src/components/modulos/create-modulo-dialog";
 import { ImportModuloDialog } from "@/src/components/modulos/import-modulo-dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/src/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/src/components/ui/select";
+import { Card, CardContent } from "@/src/components/ui/card";
+import { expedientesService } from "@/src/lib/expedientes";
 
 export default function ModulosPage() {
   const [modulos, setModulos] = useState<Modulo[]>([]);
@@ -17,15 +25,15 @@ export default function ModulosPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
-
-  const [filterType, setFilterType] = useState<"expediente" | "estado" | "contenedor" | "">("");
-;
+  const [expedienteList,setExpedienteList] = useState(0)
+  const [filterType, setFilterType] = useState<
+    "expediente" | "estado" | "contenedor" | ""
+  >("");
   const [filterValue, setFilterValue] = useState("");
 
   // ⭐ PAGINACIÓN
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-
 
   const { toast } = useToast();
 
@@ -33,6 +41,8 @@ export default function ModulosPage() {
     try {
       setIsLoading(true);
       const data = await modulosService.getAll();
+      const exp = await expedientesService.getAll()
+      setExpedienteList(exp.length)
       setModulos(data);
     } catch (error: any) {
       toast({
@@ -55,17 +65,15 @@ export default function ModulosPage() {
       mod.titulo.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .filter((mod) => {
-      if (!filterType || filterValue === "" || filterValue === "all") return true;
+      if (!filterType || filterValue === "" || filterValue === "all")
+        return true;
 
-      if (filterType === "expediente")
-        return mod.expediente.id === filterValue;
+      if (filterType === "expediente") return mod.expediente.id === filterValue;
 
-      if (filterType === "estado")
-        return mod.estado === filterValue;
+      if (filterType === "estado") return mod.estado === filterValue;
 
       if (filterType === "contenedor")
-  return mod.moduloContenedor?.id === filterValue;
-
+        return mod.moduloContenedor?.id === filterValue;
 
       return true;
     });
@@ -76,9 +84,8 @@ export default function ModulosPage() {
   }, [searchQuery, filterType, filterValue]);
 
   useEffect(() => {
-  setCurrentPage(1);
-}, [itemsPerPage]);
-
+    setCurrentPage(1);
+  }, [itemsPerPage]);
 
   // Opciones dinámicas
   const expedienteOptions = [
@@ -88,12 +95,12 @@ export default function ModulosPage() {
   const estadoOptions = [...new Set(modulos.map((m) => m.estado))];
 
   const contenedorOptions = [
-  ...new Map(
-    modulos
-      .filter((m) => m.moduloContenedor) // evitar nulls
-      .map((m) => [m.moduloContenedor?.id, m.moduloContenedor])
-  ).values(),
-];
+    ...new Map(
+      modulos
+        .filter((m) => m.moduloContenedor) // evitar nulls
+        .map((m) => [m.moduloContenedor?.id, m.moduloContenedor])
+    ).values(),
+  ];
 
   // ⭐ PAGINACIÓN (se aplica al final)
   const totalItems = filteredModulos.length;
@@ -108,9 +115,17 @@ export default function ModulosPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
+        <div >
           <h1 className="text-3xl font-bold tracking-tight">Módulos</h1>
-          <p className="text-muted-foreground mt-2">Gestiona los módulos del sistema</p>
+          <p className="text-muted-foreground mt-2 mb-3">
+            Gestiona los módulos del sistema
+          </p>
+         {expedienteList === 0 &&( <Card className="border border-yellow-500 w-md pt-1 pb-0 ">
+            <CardContent className="flex flex-row items-center gap-4">
+              <CircleAlert size={'80'} className="text-yellow-500 "/> No hay expedientes en el sistema, importe o crea
+              al menos uno para crear o importar modulos
+            </CardContent>
+          </Card>)}
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
@@ -137,8 +152,6 @@ export default function ModulosPage() {
 
         {/* FILTROS */}
         <div className="flex flex-row items-center gap-2  p-2 rounded-md">
-         
-
           {/* Tipo de filtro */}
           <Select
             onValueChange={(v) => {
@@ -146,16 +159,14 @@ export default function ModulosPage() {
               setFilterValue("");
             }}
           >
-            
             <SelectTrigger className=" hover:cursor-pointer flex justify-start">
-               <Filter className="text-muted-foreground h-4  left-3"/>
-              <SelectValue  placeholder="Tipo de filtro" />
+              <Filter className="text-muted-foreground h-4  left-3" />
+              <SelectValue placeholder="Tipo de filtro" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="expediente">Expediente</SelectItem>
               <SelectItem value="estado">Estado</SelectItem>
               <SelectItem value="contenedor">Modulo-Contenedor</SelectItem>
-
             </SelectContent>
           </Select>
 
@@ -182,13 +193,12 @@ export default function ModulosPage() {
                     </SelectItem>
                   ))}
 
-                  {filterType === "contenedor" &&
-  contenedorOptions.map((c) => (
-    <SelectItem key={c?.id} value={c?.id? c?.id:''}>
-      {c?.titulo}
-    </SelectItem>
-  ))}
-
+                {filterType === "contenedor" &&
+                  contenedorOptions.map((c) => (
+                    <SelectItem key={c?.id} value={c?.id ? c?.id : ""}>
+                      {c?.titulo}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           )}
@@ -196,59 +206,57 @@ export default function ModulosPage() {
       </div>
 
       {/* ⭐ LISTA CON PAGINACIÓN */}
-      <ModulosList 
-        modulos={paginatedModulos} 
-        isLoading={isLoading} 
-        onUpdate={loadModulos} 
+      <ModulosList
+        modulos={paginatedModulos}
+        isLoading={isLoading}
+        onUpdate={loadModulos}
       />
 
       <div className="flex justify-end items-center flex-row gap-2 mt-2">
-  <span className="text-sm text-muted-foreground">Mostrar:</span>
+        <span className="text-sm text-muted-foreground">Mostrar:</span>
 
-  <Select
-    value={itemsPerPage.toString()}
-    onValueChange={(v) => setItemsPerPage(Number(v))}
-  >
-    <SelectTrigger className="w-24">
-      <SelectValue />
-    </SelectTrigger>
-    <SelectContent>
-      <SelectItem value="5">5</SelectItem>
-      <SelectItem value="10">10</SelectItem>
-      <SelectItem value="25">25</SelectItem>
-      <SelectItem value="50">50</SelectItem>
-      <SelectItem value="100">100</SelectItem>
-    </SelectContent>
-  </Select>
+        <Select
+          value={itemsPerPage.toString()}
+          onValueChange={(v) => setItemsPerPage(Number(v))}
+        >
+          <SelectTrigger className="w-24">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="5">5</SelectItem>
+            <SelectItem value="10">10</SelectItem>
+            <SelectItem value="25">25</SelectItem>
+            <SelectItem value="50">50</SelectItem>
+            <SelectItem value="100">100</SelectItem>
+          </SelectContent>
+        </Select>
 
-  {totalPages > 1 && (
-        <div className="gap-4 flex flex-row items-center">
-          <Button 
-            variant="outline"
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((p) => p - 1)}
-          >
-            Anterior
-          </Button>
+        {totalPages > 1 && (
+          <div className="gap-4 flex flex-row items-center">
+            <Button
+              variant="outline"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
+            >
+              Anterior
+            </Button>
 
-          <span className="text-sm text-muted-foreground">
-            Página {currentPage} de {totalPages}
-          </span>
+            <span className="text-sm text-muted-foreground">
+              Página {currentPage} de {totalPages}
+            </span>
 
-          <Button 
-            variant="outline"
-            disabled={currentPage === totalPages}
-            onClick={() => setCurrentPage((p) => p + 1)}
-          >
-            Siguiente
-          </Button>
-        </div>
-      )}
-</div>
-
+            <Button
+              variant="outline"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+            >
+              Siguiente
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* ⭐ CONTROLES DE PAGINACIÓN */}
-      
 
       {/* Dialogs */}
       <CreateModuloDialog

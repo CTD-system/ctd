@@ -54,6 +54,7 @@ export function EditExpedienteDialog({ expediente, open, onOpenChange, onSuccess
       toast({
         title: "Expediente actualizado",
         description: "El expediente ha sido actualizado correctamente",
+        variant: "success",
       })
       onSuccess()
       onOpenChange(false)

@@ -125,6 +125,7 @@ const [existingListNames, setExistingListNames] = useState<string[] | null>(null
           toast({
             title: "Importado",
             description: `${file.name} importado correctamente.`,
+            variant: "success",
           });
         } catch (innerError: any) {
           toast({

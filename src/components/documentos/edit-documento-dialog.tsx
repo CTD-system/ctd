@@ -49,6 +49,7 @@ export function EditDocumentoDialog({ documento, open, onOpenChange, onSuccess }
       toast({
         title: "Documento actualizado",
         description: "El documento ha sido actualizado correctamente",
+        variant: "success",
       })
       onSuccess()
       onOpenChange(false)
