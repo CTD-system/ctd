@@ -10,12 +10,27 @@ import { PlantillasList } from "@/src/components/plantillas/plantillas-list";
 import { CreatePlantillaPage } from "@/src/components/plantillas/create-plantilla-dialog";
 import { EditPlantillaPage } from "@/src/components/plantillas/edit-plantilla-dialog";
 
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/src/components/ui/select";
+
 export default function PlantillasPage() {
   const [plantillas, setPlantillas] = useState<Plantilla[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
   const [searchQuery, setSearchQuery] = useState("");
+
+  // ⭐ PAGINACIÓN (IGUAL A DOCUMENTOS)
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   const [isCreating, setIsCreating] = useState(false);
   const [editingPlantilla, setEditingPlantilla] = useState<Plantilla | null>(null);
+
   const { toast } = useToast();
 
   const loadPlantillas = async () => {
@@ -26,7 +41,8 @@ export default function PlantillasPage() {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Error al cargar plantillas",
+        description:
+          error.response?.data?.message || "Error al cargar plantillas",
         variant: "destructive",
       });
     } finally {
@@ -34,7 +50,6 @@ export default function PlantillasPage() {
     }
   };
 
-  // Cargar toda la plantilla con estructura para edición
   const loadPlantillaForEdit = async (id: string) => {
     try {
       setIsLoading(true);
@@ -43,7 +58,8 @@ export default function PlantillasPage() {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Error al cargar la plantilla",
+        description:
+          error.response?.data?.message || "Error al cargar plantilla",
         variant: "destructive",
       });
     } finally {
@@ -55,11 +71,27 @@ export default function PlantillasPage() {
     loadPlantillas();
   }, []);
 
-  const filteredPlantillas = plantillas.filter((plantilla) =>
-    plantilla.nombre.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredPlantillas = plantillas.filter((p) =>
+    p.nombre.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Si estamos editando, mostrar el editor completo
+  // ⭐ RESET PAGINADO
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, itemsPerPage]);
+
+  // ⭐ PAGINACIÓN FINAL (IGUAL A DOCUMENTOS)
+  const totalItems = filteredPlantillas.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+
+  const paginatedPlantillas = filteredPlantillas.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
+
+  // ⭐ VISTA EDICIÓN
   if (editingPlantilla) {
     return (
       <div className="space-y-4">
@@ -86,6 +118,7 @@ export default function PlantillasPage() {
     <div className="space-y-6">
       {!isCreating && (
         <>
+          {/* HEADER */}
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Plantillas</h1>
@@ -93,15 +126,17 @@ export default function PlantillasPage() {
                 Gestiona las plantillas de documentos
               </p>
             </div>
+
             <Button onClick={() => setIsCreating(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Nueva Plantilla
             </Button>
           </div>
 
+          {/* BÚSQUEDA + ITEMS PER PAGE (IGUAL A DOCUMENTOS) */}
           <div className="flex items-center gap-4">
             <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar plantillas..."
                 value={searchQuery}
@@ -109,17 +144,65 @@ export default function PlantillasPage() {
                 className="pl-9"
               />
             </div>
+
+            {/* ITEMS POR PAGINA */}
+            
           </div>
 
+          {/* LISTA */}
           <PlantillasList
-            plantillas={filteredPlantillas}
+            plantillas={paginatedPlantillas}
             isLoading={isLoading}
             onUpdate={loadPlantillas}
-            onEdit={(id: string) => loadPlantillaForEdit(id)} // <- Aquí usamos getById
+            onEdit={(id) => loadPlantillaForEdit(id)}
           />
+
+          {/* PAGINADO (IGUAL A DOCUMENTOS) */}
+          <div className="flex justify-end items-center gap-3 mt-4">
+            <span className="text-sm text-muted-foreground">Mostrar:</span>
+            <Select
+              value={itemsPerPage.toString()}
+              onValueChange={(v) => setItemsPerPage(Number(v))}
+            >
+              <SelectTrigger className="w-24" >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+            {totalPages > 1 && (
+              <div className="flex gap-4 items-center">
+                <Button
+                  variant="outline"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => p - 1)}
+                >
+                  Anterior
+                </Button>
+
+                <span className="text-sm text-muted-foreground">
+                  Página {currentPage} de {totalPages}
+                </span>
+
+                <Button
+                  variant="outline"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => p + 1)}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            )}
+          </div>
         </>
       )}
 
+      {/* CREAR PLANTILLA */}
       {isCreating && (
         <div className="space-y-4">
           <div

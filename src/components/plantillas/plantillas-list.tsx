@@ -143,7 +143,7 @@ export function PlantillasList({ plantillas,onEdit, isLoading, onUpdate }: Plant
           <TableHeader className="bg-primary">
             <TableRow>
               <TableHead className="text-primary-foreground">Nombre</TableHead>
-              <TableHead className="text-primary-foreground">Tipo Archivo</TableHead>
+            
               <TableHead className="text-primary-foreground">Fecha Creación</TableHead>
               <TableHead className="text-primary-foreground text-right">Acciones</TableHead>
             </TableRow>
@@ -152,11 +152,7 @@ export function PlantillasList({ plantillas,onEdit, isLoading, onUpdate }: Plant
             {plantillas.map((plantilla) => (
               <TableRow key={plantilla.id}>
                 <TableCell className="font-medium">{plantilla.nombre}</TableCell>
-                <TableCell>
-                  <Badge variant="outline">
-                    {plantilla.tipo_archivo === "WORD" || 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ? "Word" : "Otro"}
-                  </Badge>
-                </TableCell>
+                
                 <TableCell>{new Date(plantilla.creado_en).toLocaleDateString()}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">

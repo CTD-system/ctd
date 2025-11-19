@@ -90,7 +90,10 @@ export function PlantillaPreview({
           >
             {/* Si existe texto HTML, se muestra con formato */}
             {bloque.texto_html ? (
-              <div dangerouslySetInnerHTML={{ __html: bloque.texto_html }} />
+              <div
+                className="whitespace-pre-wrap wrap-break-word"
+                dangerouslySetInnerHTML={{ __html: bloque.texto_html }}
+              />
             ) : (
               <p>{bloque.texto_plano || ""}</p>
             )}
@@ -222,7 +225,7 @@ export function PlantillaPreview({
                               key={j}
                               colSpan={colSpan || 1}
                               rowSpan={rowSpan || 1}
-                              className="border border-gray-300 px-4 py-2 align-top"
+                              className="border border-gray-300 px-4 py-2 "
                               style={{
                                 fontFamily: fuente,
                                 fontSize: `${tamanoFuente}px`,
@@ -263,54 +266,53 @@ export function PlantillaPreview({
         );
 
       case "imagen":
-  // Detectar si la imagen es EMF
-  const isEMF = bloque.src?.startsWith("data:image/x-emf") || bloque.src?.endsWith(".emf");
+        // Detectar si la imagen es EMF
+        const isEMF =
+          bloque.src?.startsWith("data:image/x-emf") ||
+          bloque.src?.endsWith(".emf");
 
-  if (isEMF) {
-    return (
-      <div
-        key={index}
-        className="mb-4 p-3 border border-red-300 rounded bg-red-50"
-        style={{ marginLeft: `${nivel * 20}px` }}
-      >
-        <p className="text-red-700 font-semibold">
-          ⚠️ Imagen EMF no soportada en el navegador
-        </p>
-        <p className="text-sm text-red-600">
-          La imagen "{bloque.alt || 'sin nombre'}" no se muestra porque es un
-          archivo EMF, formato vectorial de Windows que no se puede renderizar en web.
-        </p>
-      </div>
-    );
-  }
+        if (isEMF) {
+          return (
+            <div
+              key={index}
+              className="mb-4 p-3 border border-red-300 rounded bg-red-50"
+              style={{ marginLeft: `${nivel * 20}px` }}
+            >
+              <p className="text-red-700 font-semibold">
+                ⚠️ Imagen EMF no soportada en el navegador
+              </p>
+              <p className="text-sm text-red-600">
+                La imagen "{bloque.alt || "sin nombre"}" no se muestra porque es
+                un archivo EMF, formato vectorial de Windows que no se puede
+                renderizar en web.
+              </p>
+            </div>
+          );
+        }
 
-  // Renderizar normalmente si no es EMF
-  const imgSrc =
-    bloque.src?.startsWith("data:")
-      ? base64ToUrl(bloque.src)
-      : bloque.src || "/placeholder.svg";
+        // Renderizar normalmente si no es EMF
+        const imgSrc = bloque.src?.startsWith("data:")
+          ? base64ToUrl(bloque.src)
+          : bloque.src || "/placeholder.svg";
 
-  return (
-    <div
-      key={index}
-      className="mb-4 overflow-x-auto"
-      style={{ marginLeft: `${nivel * 20}px` }}
-    >
-      <div className="inline-block border border-gray-300 rounded p-1 bg-white">
-        <img
-          src={imgSrc}
-          alt={bloque.alt || "Imagen"}
-          className="max-w-full max-h-[500px] object-contain rounded"
-        />
-      </div>
-      {bloque.alt && (
-        <p className="text-sm text-gray-600 mt-1 italic">{bloque.alt}</p>
-      )}
-    </div>
-  );
-
-
-
+        return (
+          <div
+            key={index}
+            className="mb-4 overflow-x-auto"
+            style={{ marginLeft: `${nivel * 20}px` }}
+          >
+            <div className="inline-block border border-gray-300 rounded p-1 bg-white">
+              <img
+                src={imgSrc}
+                alt={bloque.alt || "Imagen"}
+                className="max-w-full max-h-[500px] object-contain rounded"
+              />
+            </div>
+            {bloque.alt && (
+              <p className="text-sm text-gray-600 mt-1 italic">{bloque.alt}</p>
+            )}
+          </div>
+        );
 
       case "placeholder":
         return (
@@ -348,24 +350,23 @@ export function PlantillaPreview({
   }
 
   const base64ToUrl = (base64: string) => {
-  const arr = base64.split(',');
-  const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
-  const bstr = atob(arr[1]);
-  let n = bstr.length;
-  const u8arr = new Uint8Array(n);
+    const arr = base64.split(",");
+    const mime = arr[0].match(/:(.*?);/)?.[1] || "image/png";
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
 
-  while (n--) {
-    u8arr[n] = bstr.charCodeAt(n);
-  }
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
 
-  const blob = new Blob([u8arr], { type: mime });
-  return URL.createObjectURL(blob);
-};
-
+    const blob = new Blob([u8arr], { type: mime });
+    return URL.createObjectURL(blob);
+  };
 
   return (
-    <Card >
-      <CardContent className="p-6 ">
+    <Card className="w-xl">
+      <CardContent className="p-6">
         {/* Título del documento */}
         {estructura.titulo && (
           <h1
@@ -377,7 +378,7 @@ export function PlantillaPreview({
         )}
 
         {/* Bloques del documento */}
-        <div className="space-y-2">
+        <div className="space-y-2 ">
           {estructura.bloques.map((bloque, index) =>
             renderBloque(bloque, index)
           )}

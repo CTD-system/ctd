@@ -31,6 +31,7 @@ import {
   TableRow,
 } from "@/src/components/ui/table";
 import { ViewDocumentoDialog } from "./view-documento-dialog";
+import { mimeToExt } from "@/src/utils/mimeTypeTranslator";
 
 interface DocumentosListProps {
   documentos: Documento[];
@@ -159,10 +160,7 @@ export function DocumentosList({
                 </TableCell>
                 <TableCell>{documento.version}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">
-                  {documento.mime_type ===
-                  "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    ? "word"
-                    : "otro"}
+                  {mimeToExt(documento.mime_type)}
                 </TableCell>
                 <TableCell>{new Date(documento.subido_en).toLocaleDateString()}</TableCell>
                 <TableCell className="text-right">
