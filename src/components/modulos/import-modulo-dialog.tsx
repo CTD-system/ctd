@@ -202,6 +202,8 @@ export function ImportModuloDialog({ open, onOpenChange, onSuccess }: ImportModu
                 </div>
               </div>
 
+            </div>
+            
               {files.length > 0 && (
                 <ul className="mt-4 max-h-48 w-full overflow-auto divide-y rounded border bg-white border-gray-100">
                   {files.map((f) => (
@@ -222,7 +224,6 @@ export function ImportModuloDialog({ open, onOpenChange, onSuccess }: ImportModu
                   ))}
                 </ul>
               )}
-            </div>
           </div>
 
           <div className="flex justify-end gap-3">

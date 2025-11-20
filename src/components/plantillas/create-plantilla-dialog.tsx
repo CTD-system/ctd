@@ -384,6 +384,7 @@ export function CreatePlantillaPage({ onSuccess }: CreatePlantillaPageProps) {
                   <Button
                     type="button"
                     variant="destructive"
+                    className="hover:cursor-pointer"
                     size="icon"
                     onClick={() => eliminarBloque(index)}
                   >
