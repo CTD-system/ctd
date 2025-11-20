@@ -15,6 +15,16 @@ import { useToast } from "@/src/hooks/use-toast";
 import { DropzoneImagen } from "./dropZoneImage";
 import { v4 as uuid } from "uuid"
 
+// Función auxiliar para clonar bloques profundamente sin perder datos
+const clonarBloque = (bloque: Bloque): Bloque => {
+  try {
+    return JSON.parse(JSON.stringify(bloque));
+  } catch (e) {
+    console.warn("Error al clonar bloque, usando spread operator", e);
+    return { ...bloque };
+  }
+};
+
 interface EditPlantillaPageProps {
   plantilla: Plantilla;
   onSuccess: () => void;
@@ -41,15 +51,26 @@ export function EditPlantillaPage({
   const { toast } = useToast();
 
   useEffect(() => {
-
+    // Función recursiva para asegurar IDs en bloques anidados
     function ensureIds(bloques: Bloque[]): Bloque[] {
-    return bloques.map((b) => ({
-      ...b,
-      id: b.id ?? uuid(),
-    }))
-  }
-  
-  
+      return bloques.map((b) => {
+        const bloqueConId = {
+          ...b,
+          id: b.id ?? uuid(),
+        };
+        
+        // Si tiene sub-bloques (capítulo/subcapítulo), procesarlos recursivamente
+        if ('bloques' in bloqueConId && Array.isArray(bloqueConId.bloques)) {
+          return {
+            ...bloqueConId,
+            bloques: ensureIds(bloqueConId.bloques)
+          };
+        }
+        
+        return bloqueConId;
+      });
+    }
+    
     setFormData({
       nombre: plantilla.nombre,
       descripcion: plantilla.descripcion,
@@ -62,10 +83,9 @@ export function EditPlantillaPage({
       color_texto: plantilla.color_texto ?? "#000000",
       autogenerar_indice: plantilla.autogenerar_indice ?? false,
       estructura: {
-  tipo: "documento", // <--- fuerza el literal correcto
-  bloques: ensureIds(plantilla.estructura?.bloques ?? [])
-}
-
+        tipo: "documento",
+        bloques: ensureIds(plantilla.estructura?.bloques ?? [])
+      }
     });
   }, [plantilla]);
 
@@ -92,66 +112,91 @@ export function EditPlantillaPage({
   }
 
 
-     if (formData.estructura.bloques.length === 0) {
-  toast({
-    title: "Estructura incompleta",
-    description: "La plantilla debe tener al menos 1 bloque.",
-    variant: "destructive",
-  })
-  setIsLoading(false)
-  return
-}
-
-const bloquesSanitizados = formData.estructura.bloques.map((b,i) => {
-  switch(b.tipo) {
-
-    case "capitulo":
-    case "subcapitulo":
-      return {
-        ...b,
-        titulo: b.titulo.trim() || `${b.tipo} ${i+1}`
-      }
-
-    case "parrafo":
-      return {
-        ...b,
-        texto_html: b.texto_html.trim() || `(párrafo ${i+1})`,
-        texto_plano: (b.texto_html.trim() || `(párrafo ${i+1})`).replace(/<[^>]+>/g,"")
-      }
-
-    case "imagen":
-      return {
-        ...b,
-        // esto por si src quedó vacío
-        alt: b.alt?.trim() || `imagen ${i+1}`
-      }
-
-    case "placeholder":
-      return {
-        ...b,
-        clave: b.clave.trim() || `Control de contenido_${i+1}`
-      }
-
-    case "tabla":
-      // si una tabla está totalmente vacía → al menos 1 columna y 1 fila default
-      if (b.encabezados.length === 0) {
-        return {
-          ...b,
-          encabezados: ["Columna 1"],
-          filas: [[""]]
-        }
-      }
-      return b
+  if (formData.estructura.bloques.length === 0) {
+    toast({
+      title: "Estructura incompleta",
+      description: "La plantilla debe tener al menos 1 bloque.",
+      variant: "destructive",
+    })
+    setIsLoading(false)
+    return
   }
-})
 
-const payload = {
+  // Función recursiva para sanitizar bloques anidados
+  const sanitizarBloques = (bloques: Bloque[], prefix = ""): Bloque[] => {
+    return bloques.map((b, i) => {
+      const contador = `${prefix}${i+1}`;
+      
+      switch(b.tipo) {
+        case "capitulo":
+        case "subcapitulo": {
+          const bloqueCapitulo = b as any;
+          return {
+            ...bloqueCapitulo,
+            titulo: (bloqueCapitulo.titulo?.trim() || `${b.tipo} ${contador}`),
+            bloques: bloqueCapitulo.bloques ? sanitizarBloques(bloqueCapitulo.bloques, `${contador}.`) : []
+          };
+        }
+
+        case "parrafo": {
+          const bloqueParrafo = b as any;
+          const textTrimmed = bloqueParrafo.texto_html?.trim() || `(párrafo ${contador})`;
+          return {
+            ...bloqueParrafo,
+            texto_html: textTrimmed,
+            texto_plano: textTrimmed.replace(/<[^>]+>/g,"")
+          };
+        }
+
+        case "imagen": {
+          const bloqueImagen = b as any;
+          return {
+            ...bloqueImagen,
+            src: bloqueImagen.src || "",
+            alt: bloqueImagen.alt?.trim() || `imagen ${contador}`
+          };
+        }
+
+        case "placeholder": {
+          const bloquePlaceholder = b as any;
+          return {
+            ...bloquePlaceholder,
+            clave: bloquePlaceholder.clave?.trim() || `Control de contenido_${contador}`
+          };
+        }
+
+        case "tabla": {
+          const bloqueTabla = b as any;
+          // Si la tabla está vacía, crear estructura mínima
+          if (!bloqueTabla.encabezados || bloqueTabla.encabezados.length === 0) {
+            return {
+              ...bloqueTabla,
+              encabezados: ["Columna 1"],
+              filas: [[""]]
+            };
+          }
+          // Asegurar que filas no sea undefined
+          return {
+            ...bloqueTabla,
+            filas: bloqueTabla.filas || [[]]
+          };
+        }
+
+        default:
+          return b;
+      }
+    }).filter((b): b is Bloque => b !== null && b !== undefined);
+  };
+
+  const bloquesSanitizados = sanitizarBloques(formData.estructura.bloques);
+
+  const payload = {
     ...formData,
     estructura: {
       ...formData.estructura,
       bloques: bloquesSanitizados
     }
-  }
+  };
     try {
       await plantillasService.update(plantilla.id, payload);
       toast({
@@ -230,48 +275,83 @@ const payload = {
     });
   };
 
+  // Función auxiliar para actualizar bloques anidados recursivamente
+  const actualizarBloqueAnidado = (
+    bloques: Bloque[],
+    path: number[],
+    bloqueActualizado: Bloque
+  ): Bloque[] => {
+    if (path.length === 0) return bloques;
+    if (path.length === 1) {
+      const index = path[0];
+      return bloques.map((b, i) => (i === index ? bloqueActualizado : b));
+    }
+
+    const [currentIndex, ...restPath] = path;
+    return bloques.map((b, i) => {
+      if (i === currentIndex && 'bloques' in b && Array.isArray(b.bloques)) {
+        return {
+          ...b,
+          bloques: actualizarBloqueAnidado(b.bloques, restPath, bloqueActualizado)
+        };
+      }
+      return b;
+    });
+  };
+
   const actualizarBloque = (index: number, bloqueActualizado: Bloque) => {
-    const nuevosBloques = [...formData.estructura.bloques];
-    nuevosBloques[index] = bloqueActualizado;
     setFormData({
       ...formData,
-      estructura: { ...formData.estructura, bloques: nuevosBloques },
+      estructura: {
+        ...formData.estructura,
+        bloques: actualizarBloqueAnidado(formData.estructura.bloques, [index], bloqueActualizado)
+      }
     });
   };
 
   const eliminarBloque = (index: number) => {
-    const nuevosBloques = [...formData.estructura.bloques];
-    nuevosBloques.splice(index, 1);
+    setFormData({
+      ...formData,
+      estructura: {
+        ...formData.estructura,
+        bloques: formData.estructura.bloques.filter((_, i) => i !== index)
+      }
+    });
+  };
+  const copiarTabla = (index: number) => {
+    const original = formData.estructura.bloques[index];
+    if (original.tipo !== "tabla") return;
+
+    const copia = clonarBloque(original) as any;
+    copia.id = uuid(); // NUEVO ID
+
+    const nuevosBloques = [
+      ...formData.estructura.bloques.slice(0, index + 1),
+      copia,
+      ...formData.estructura.bloques.slice(index + 1)
+    ];
+
     setFormData({
       ...formData,
       estructura: { ...formData.estructura, bloques: nuevosBloques },
     });
   };
-  const copiarTabla = (index: number) => {
-    const original = formData.estructura.bloques[index];
-  if (original.tipo !== "tabla") return;
-
-   const copia = JSON.parse(JSON.stringify(original));
-  copia.id = uuid(); // NUEVO ID
-
-  const nuevosBloques = [...formData.estructura.bloques];
-  nuevosBloques.splice(index + 1, 0, copia); // insertar debajo
-
-  setFormData({
-    ...formData,
-    estructura: { ...formData.estructura, bloques: nuevosBloques },
-  });
-};
 
 
   const agregarFilaTabla = (indexBloque: number) => {
-    const bloques = [...formData.estructura.bloques];
-    const bloque = bloques[indexBloque];
+    const bloque = formData.estructura.bloques[indexBloque];
     if (bloque.tipo !== "tabla") return;
+    
     const numColumnas = bloque.encabezados.length || 1;
     const nuevaFila = Array(numColumnas).fill("");
-    bloque.filas.push(nuevaFila);
-    actualizarBloque(indexBloque, bloque);
+    
+    // Crear nueva instancia sin mutar
+    const bloqueActualizado = {
+      ...bloque,
+      filas: [...bloque.filas, nuevaFila]
+    };
+    
+    actualizarBloque(indexBloque, bloqueActualizado);
   };
 
   const agregarColumnaTabla = (bloque: Bloque, index: number) => {
@@ -461,6 +541,24 @@ const payload = {
     index: number,
     nivel = 0
   ): React.ReactNode => {
+    // Guard para bloques nulos o undefined
+    if (!bloque || !bloque.tipo) {
+      console.warn("Bloque nulo o sin tipo detectado en índice", index, bloque);
+      return (
+        <div className="border-2 border-red-500 p-4 rounded bg-red-50 space-y-2">
+          <p className="text-red-700 font-bold">⚠️ Error: Bloque corrupto en posición {index}</p>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={() => eliminarBloque(index)}
+          >
+            Eliminar bloque corrupto
+          </Button>
+        </div>
+      );
+    }
+
     return (
       <div
        

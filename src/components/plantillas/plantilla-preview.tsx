@@ -33,6 +33,16 @@ export function PlantillaPreview({
     index: number,
     nivel = 0
   ): React.ReactNode => {
+    // Guard para bloques nulos o sin tipo
+    if (!bloque || !bloque.tipo) {
+      console.warn("Bloque nulo o sin tipo detectado en preview, índice:", index, bloque);
+      return (
+        <div key={index} className="p-3 border border-red-300 rounded bg-red-50">
+          <p className="text-red-700 font-semibold">⚠️ Error: Bloque corrupto</p>
+        </div>
+      );
+    }
+
     switch (bloque.tipo) {
       case "capitulo":
         return (
